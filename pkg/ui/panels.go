@@ -14,46 +14,85 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+// Terminal theme colors
+var (
+	// Base colors
+	terminalBlack       = lipgloss.Color("#1d2021")
+	terminalBrightBlack = lipgloss.Color("#504945")
+	terminalWhite       = lipgloss.Color("#fbf1c7")
+	terminalBrightWhite = lipgloss.Color("#f9f5d7")
+
+	// ANSI-like color palette
+	terminalCyan = lipgloss.Color("#689d6a")
+
+	// Bright variants
+	terminalBrightRed    = lipgloss.Color("#fb4934")
+	terminalBrightGreen  = lipgloss.Color("#b8bb26")
+	terminalBrightYellow = lipgloss.Color("#fabd2f")
+	terminalBrightBlue   = lipgloss.Color("#83a598")
+	terminalBrightCyan   = lipgloss.Color("#8ec07c")
+)
+
+// Border characters for terminal look
+var borderChars = lipgloss.Border{
+	Top:         "─",
+	Bottom:      "─",
+	Left:        "│",
+	Right:       "│",
+	TopLeft:     "┌",
+	TopRight:    "┐",
+	BottomLeft:  "└",
+	BottomRight: "┘",
+}
+
 // PanelStyle defines the style for a panel
 var PanelStyle = lipgloss.NewStyle().
-	BorderStyle(lipgloss.RoundedBorder()).
-	BorderForeground(lipgloss.Color("#3c3836")).
-	Padding(0, 0)
+	BorderStyle(borderChars).
+	BorderForeground(terminalBrightBlack).
+	Padding(0, 0).
+	// Shadow effect
+	Border(lipgloss.Border{Bottom: "▔", Right: "▕"}, false, false, true, true).
+	BorderForeground(terminalBlack)
 
 // TitleStyle defines the style for a panel title
 var TitleStyle = lipgloss.NewStyle().
-	Foreground(lipgloss.Color("#fabd2f")).
+	Foreground(terminalBrightYellow).
 	Bold(true).
-	PaddingLeft(1)
+	PaddingLeft(1).
+	Underline(true)
 
 // HighlightStyle defines the style for highlighted items
 var HighlightStyle = lipgloss.NewStyle().
-	Foreground(lipgloss.Color("#b8bb26")).
+	Foreground(terminalBrightGreen).
 	Bold(true)
 
 // ErrorStyle defines the style for error messages
 var ErrorStyle = lipgloss.NewStyle().
-	Foreground(lipgloss.Color("#fb4934")).
+	Foreground(terminalBrightRed).
 	Bold(true)
 
 // SelectedItemStyle defines the style for selected items in lists
 var SelectedItemStyle = lipgloss.NewStyle().
-	Foreground(lipgloss.Color("#83a598")).
-	Background(lipgloss.Color("#3c3836")).
+	Foreground(terminalBrightBlue).
+	Background(terminalBrightBlack).
 	Bold(true)
 
 // HeaderStyle defines the style for panel headers
 var HeaderStyle = lipgloss.NewStyle().
-	Background(lipgloss.Color("#3c3836")).
-	Foreground(lipgloss.Color("#ebdbb2")).
+	Background(terminalBrightBlack).
+	Foreground(terminalWhite).
 	Bold(true).
-	Padding(0, 1)
+	Padding(0, 1).
+	Border(lipgloss.Border{Bottom: "▁"}, false, false, true, false).
+	BorderForeground(terminalBrightBlack)
 
 // StatusStyle defines the style for status bars
 var StatusStyle = lipgloss.NewStyle().
-	Background(lipgloss.Color("#282828")).
-	Foreground(lipgloss.Color("#a89984")).
-	Padding(0, 1)
+	Background(terminalBlack).
+	Foreground(terminalBrightWhite).
+	Padding(0, 1).
+	Border(lipgloss.Border{Top: "▔"}, false, false, true, false).
+	BorderForeground(terminalBrightBlack)
 
 // Panel represents a UI panel
 type Panel interface {
@@ -94,24 +133,36 @@ func NewScriptsPanel(scriptRunner *scripts.ScriptRunner) *ScriptsPanel {
 	delegate.ShowDescription = true
 	delegate.SetSpacing(0) // Reduce spacing between items
 	delegate.Styles.SelectedTitle = delegate.Styles.SelectedTitle.
-		Foreground(lipgloss.Color("#b8bb26")).
-		Bold(true)
+		Foreground(terminalBrightGreen).
+		Background(terminalBrightBlack).
+		Bold(true).
+		Underline(false).
+		Padding(0, 1)
 	delegate.Styles.SelectedDesc = delegate.Styles.SelectedDesc.
-		Foreground(lipgloss.Color("#83a598")).
-		Bold(false)
+		Foreground(terminalBrightBlue).
+		Background(terminalBrightBlack).
+		Padding(0, 1)
 	delegate.Styles.NormalTitle = delegate.Styles.NormalTitle.
-		Foreground(lipgloss.Color("#ebdbb2"))
+		Foreground(terminalBrightWhite).
+		Padding(0, 1)
+	delegate.Styles.NormalDesc = delegate.Styles.NormalDesc.
+		Foreground(terminalCyan).
+		Padding(0, 1)
 
 	// Create the list model
 	scriptList := list.New(scriptItems, delegate, 0, 0)
-	scriptList.Title = "🧪 Scripts"
+	scriptList.Title = "📜 Scripts"
 	scriptList.SetShowStatusBar(false)    // Hide status bar to save space
 	scriptList.SetFilteringEnabled(false) // Disable filtering to save space
 	scriptList.SetShowHelp(false)         // Hide help to save space
 	scriptList.Styles.Title = scriptList.Styles.Title.
-		Foreground(lipgloss.Color("#b8bb26")).
-		Background(lipgloss.Color("#3c3836")).
-		Bold(true)
+		Foreground(terminalBrightYellow).
+		Background(terminalBrightBlack).
+		BorderStyle(lipgloss.ThickBorder()).
+		BorderBottom(true).
+		BorderForeground(terminalBrightBlack).
+		Bold(true).
+		Padding(0, 1)
 
 	return &ScriptsPanel{
 		title:        "Scripts",
@@ -216,7 +267,7 @@ func (p *ScriptsPanel) View() string {
 	} else if p.error != "" {
 		statusInfo = ErrorStyle.Render(p.error)
 	} else if _, ok := p.scriptList.SelectedItem().(scriptItem); ok {
-		statusInfo = fmt.Sprintf("[↵]Run")
+		statusInfo = "[↵]Run"
 	}
 
 	// Ultra compact view with minimal status line
@@ -582,6 +633,9 @@ func (p *PackagesPanel) Update(msg tea.Msg) (Panel, tea.Cmd) {
 
 			// Update the input
 			p.input, cmd = p.input.Update(msg)
+			if cmd != nil {
+				return p, cmd
+			}
 
 		case p.showActions:
 			// Handle action selection mode
@@ -627,6 +681,9 @@ func (p *PackagesPanel) Update(msg tea.Msg) (Panel, tea.Cmd) {
 
 			// Update the action list
 			p.actionList, cmd = p.actionList.Update(msg)
+			if cmd != nil {
+				return p, cmd
+			}
 
 		case !p.showInput && !p.showActions:
 			// Handle normal mode
@@ -870,20 +927,22 @@ type LogsPanel struct {
 func NewLogsPanel() *LogsPanel {
 	viewport := viewport.New(0, 0)
 	viewport.Style = lipgloss.NewStyle().
+		Background(terminalBlack).
+		Foreground(terminalBrightGreen).
 		PaddingLeft(1).
 		PaddingRight(1)
 
-	// Spinner animation frames
-	spinnerFrames := []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
+	// Terminal-style spinner animation frames
+	spinnerFrames := []string{"⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷"}
 
 	return &LogsPanel{
-		title:         "Logs",
+		title:         "Terminal",
 		viewport:      viewport,
-		logs:          []string{},
+		logs:          []string{"$ LazyNode terminal initialized. Ready for commands..."},
 		spinner:       0,
 		spinnerFrames: spinnerFrames,
 		lastUpdate:    time.Now(),
-		maxLogHistory: 100, // Limit log history to prevent memory bloat
+		maxLogHistory: 500, // Increase log history for more terminal-like scrolling
 	}
 }
 
@@ -910,7 +969,37 @@ func (p *LogsPanel) Update(msg tea.Msg) (Panel, tea.Cmd) {
 // AddLog adds a log message
 func (p *LogsPanel) AddLog(message string) {
 	timestamp := time.Now().Format("15:04:05")
-	logEntry := fmt.Sprintf("[%s] %s", timestamp, message)
+
+	// Apply different styles based on the message content
+	var logEntry string
+
+	// Style error messages in red
+	if strings.Contains(strings.ToLower(message), "error") ||
+		strings.Contains(strings.ToLower(message), "failed") ||
+		strings.Contains(strings.ToLower(message), "fatal") {
+		logEntry = lipgloss.NewStyle().
+			Foreground(terminalBrightRed).
+			Render(fmt.Sprintf("[%s] %s", timestamp, message))
+	} else if strings.Contains(strings.ToLower(message), "running") ||
+		strings.Contains(strings.ToLower(message), "starting") ||
+		strings.Contains(strings.ToLower(message), "executing") {
+		// Style "running" messages in bright yellow
+		logEntry = lipgloss.NewStyle().
+			Foreground(terminalBrightYellow).
+			Render(fmt.Sprintf("[%s] %s", timestamp, message))
+	} else if strings.Contains(strings.ToLower(message), "completed") ||
+		strings.Contains(strings.ToLower(message), "success") ||
+		strings.Contains(strings.ToLower(message), "finished") {
+		// Style "success" messages in bright green
+		logEntry = lipgloss.NewStyle().
+			Foreground(terminalBrightGreen).
+			Render(fmt.Sprintf("[%s] %s", timestamp, message))
+	} else {
+		// Default style for other messages
+		logEntry = lipgloss.NewStyle().
+			Foreground(terminalBrightWhite).
+			Render(fmt.Sprintf("[%s] %s", timestamp, message))
+	}
 
 	// Add the log to the top for newest-first ordering
 	p.logs = append([]string{logEntry}, p.logs...)
@@ -961,21 +1050,30 @@ func (p *LogsPanel) View() string {
 	p.viewport.Width = viewportWidth
 	p.viewport.Height = viewportHeight
 
-	// For compact view, maybe show only the most recent few logs
-	// Create a condensed view with less lines
-	maxLogs := 50
-	if len(p.logs) > maxLogs {
-		recentLogs := p.logs[:maxLogs]
-		p.viewport.SetContent(strings.Join(recentLogs, "\n"))
-	} else {
-		p.viewport.SetContent(strings.Join(p.logs, "\n"))
-	}
+	// Create a terminal prompt footer for the logs panel
+	prompt := lipgloss.NewStyle().
+		Background(terminalBlack).
+		Foreground(terminalBrightGreen).
+		Render(fmt.Sprintf("%s ", p.spinnerFrames[p.spinner])) +
+		lipgloss.NewStyle().
+			Background(terminalBlack).
+			Foreground(terminalBrightCyan).
+			Bold(true).
+			Render("$ ")
+
+	// Style the logs to look like terminal output
+	content := strings.Join(p.logs, "\n")
+	p.viewport.SetContent(content)
 
 	// Auto-scroll to top (most recent logs)
 	p.viewport.GotoTop()
 
-	// Render the viewport without adding extra space
-	return p.viewport.View()
+	// Combine viewport with prompt for a terminal-like appearance
+	return lipgloss.JoinVertical(
+		lipgloss.Left,
+		p.viewport.View(),
+		prompt,
+	)
 }
 
 // Width returns the panel width

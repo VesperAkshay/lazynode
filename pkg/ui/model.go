@@ -161,21 +161,33 @@ type Model struct {
 	showHelp     bool
 	ready        bool
 	error        string
+	// Splash screen related fields
+	showSplash   bool
+	splashScreen SplashModel
+	// Quit screen related fields
+	showQuit   bool
+	quitScreen QuitModel
 }
 
 // NewModel initializes a new model with default values
 func NewModel() Model {
 	keys := DefaultKeyMap()
 	helpPanel := NewHelpPanel()
+	splashScreen := NewSplashModel()
+	quitScreen := NewQuitModel()
 
 	return Model{
-		keys:      keys,
-		help:      help.New(),
-		activeTab: "scripts",
-		panels:    make(map[string]Panel),
-		helpPanel: helpPanel,
-		showHelp:  false,
-		ready:     false,
+		keys:         keys,
+		help:         help.New(),
+		activeTab:    "scripts",
+		panels:       make(map[string]Panel),
+		helpPanel:    helpPanel,
+		showHelp:     false,
+		ready:        false,
+		showSplash:   true,
+		splashScreen: splashScreen,
+		showQuit:     false,
+		quitScreen:   quitScreen,
 	}
 }
 
@@ -183,6 +195,7 @@ func NewModel() Model {
 func (m Model) Init() tea.Cmd {
 	return tea.Batch(
 		tea.EnterAltScreen,
+		m.splashScreen.Init(),
 		m.detectProject,
 		m.startTicker(),
 	)
@@ -253,6 +266,37 @@ type tickMsg time.Time
 // Update handles key events and updates the model
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
+
+	// Handle splash screen if it's active
+	if m.showSplash {
+		// Update splash screen
+		updatedSplash, cmd := m.splashScreen.Update(msg)
+		m.splashScreen = updatedSplash
+
+		// If splash screen is done, transition to main UI
+		if m.splashScreen.IsDone() {
+			m.showSplash = false
+		} else if cmd != nil {
+			return m, cmd
+		}
+	}
+
+	// Handle quit screen if it's active
+	if m.showQuit {
+		// Update quit screen
+		updatedQuit, cmd := m.quitScreen.Update(msg)
+		m.quitScreen = updatedQuit
+
+		// If quit screen is done, exit the application
+		if m.quitScreen.IsDone() {
+			return m, tea.Quit
+		} else if cmd != nil {
+			return m, cmd
+		}
+
+		// Only show quit screen, nothing else to update
+		return m, nil
+	}
 
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
@@ -337,7 +381,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Handle global key presses
 		switch {
 		case key.Matches(msg, m.keys.Quit):
-			return m, tea.Quit
+			// Show quit screen instead of immediately quitting
+			m.showQuit = true
+			m.quitScreen = NewQuitModel()
+			return m, m.quitScreen.Init()
 
 		case key.Matches(msg, m.keys.Help):
 			m.showHelp = !m.showHelp
@@ -522,6 +569,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View renders the user interface
 func (m Model) View() string {
+	// Show splash screen if active
+	if m.showSplash {
+		return m.splashScreen.View()
+	}
+
+	// Show quit screen if active
+	if m.showQuit {
+		return m.quitScreen.View()
+	}
+
 	if m.error != "" {
 		return fmt.Sprintf("Error: %s\n\nPress q to quit", m.error)
 	}

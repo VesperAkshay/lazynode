@@ -21,7 +21,6 @@ type NpxPanel struct {
 	error       string
 	input       textinput.Model
 	showInput   bool
-	history     []string
 }
 
 // npxItem represents an npx command item in the list
@@ -124,6 +123,9 @@ func (p *NpxPanel) Update(msg tea.Msg) (Panel, tea.Cmd) {
 
 			// Update the input
 			p.input, cmd = p.input.Update(msg)
+			if cmd != nil {
+				return p, cmd
+			}
 
 		case !p.showInput:
 			// Handle normal mode
