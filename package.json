@@ -1,0 +1,48 @@
+{
+  "name": "lazynode",
+  "version": "0.1.0",
+  "description": "A TUI for Node.js, npm, and npx - inspired by Lazygit",
+  "bin": {
+    "lazynode": "./bin/lazynode"
+  },
+  "scripts": {
+    "postinstall": "node install.js"
+  },
+  "files": [
+    "bin",
+    "install.js",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=12"
+  },
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "keywords": [
+    "node",
+    "npm",
+    "npx",
+    "tui",
+    "terminal",
+    "cli",
+    "package-manager",
+    "lazygit"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/lazynode.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/lazynode/issues"
+  },
+  "homepage": "https://github.com/yourusername/lazynode#readme",
+  "dependencies": {
+    "extract-zip": "^2.0.1",
+    "got": "^11.8.5"
+  }
+} 
