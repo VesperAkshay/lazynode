@@ -21,6 +21,7 @@ type NpxPanel struct {
 	error       string
 	input       textinput.Model
 	showInput   bool
+	history     []string
 }
 
 // npxItem represents an npx command item in the list
@@ -170,39 +171,29 @@ func (p *NpxPanel) Update(msg tea.Msg) (Panel, tea.Cmd) {
 
 // View renders the panel
 func (p *NpxPanel) View() string {
-	// Update the list dimensions
-	p.commandList.SetSize(p.width-4, p.height-4)
-
-	// Show loading or error
+	// In a 4-panel grid, we need to be more economical with space
 	if p.loading {
-		return PanelStyle.Width(p.width).Height(p.height).Render(
-			fmt.Sprintf("%s\n\nRunning npx command...", TitleStyle.Render(p.title)),
-		)
+		return "Running npx command..."
 	}
 
 	if p.error != "" {
-		return PanelStyle.Width(p.width).Height(p.height).Render(
-			fmt.Sprintf("%s\n\n%s", TitleStyle.Render(p.title), ErrorStyle.Render(p.error)),
-		)
+		return ErrorStyle.Render(p.error)
 	}
 
-	// Show input or list
 	if p.showInput {
-		return PanelStyle.Width(p.width).Height(p.height).Render(
-			fmt.Sprintf("%s\n\n%s\n\n%s",
-				TitleStyle.Render(p.title),
-				"Enter npx command:",
-				p.input.View(),
-			),
-		)
+		return fmt.Sprintf("NPX Command:\n%s", p.input.View())
 	}
 
-	return PanelStyle.Width(p.width).Height(p.height).Render(
-		fmt.Sprintf("%s\n\n%s\n\nPress (n) to run a new command, (enter) to run selected command",
-			TitleStyle.Render(p.title),
-			p.commandList.View(),
-		),
-	)
+	// Update the list dimensions
+	availableHeight := p.height - 2 // Reserve space for title and help text
+	if availableHeight < 1 {
+		availableHeight = 1
+	}
+	p.commandList.SetSize(p.width, availableHeight)
+
+	// Show a compact version of the command list
+	return fmt.Sprintf("%s\n[n]New [↵]Run",
+		p.commandList.View())
 }
 
 // Width returns the panel width
@@ -217,9 +208,29 @@ func (p *NpxPanel) Height() int {
 
 // SetSize sets the panel size
 func (p *NpxPanel) SetSize(width, height int) {
+	// Ensure minimum dimensions
+	if width < 10 {
+		width = 10
+	}
+	if height < 5 {
+		height = 5
+	}
+
 	p.width = width
 	p.height = height
-	p.commandList.SetSize(width-4, height-4)
+
+	// Set list size with proper constraints
+	listWidth := width - 2   // Account for borders
+	listHeight := height - 2 // Account for title and help text
+
+	if listWidth < 5 {
+		listWidth = 5
+	}
+	if listHeight < 1 {
+		listHeight = 1
+	}
+
+	p.commandList.SetSize(listWidth, listHeight)
 }
 
 // Title returns the panel title

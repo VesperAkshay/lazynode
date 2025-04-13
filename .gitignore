@@ -36,3 +36,8 @@ dist/
 
 # Debug files
 __debug_bin 
+
+test/
+
+lazynode
+lazynode.exe

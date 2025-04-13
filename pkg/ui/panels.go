@@ -16,23 +16,44 @@ import (
 
 // PanelStyle defines the style for a panel
 var PanelStyle = lipgloss.NewStyle().
-	BorderStyle(lipgloss.HiddenBorder()).
+	BorderStyle(lipgloss.RoundedBorder()).
+	BorderForeground(lipgloss.Color("#3c3836")).
 	Padding(0, 0)
 
 // TitleStyle defines the style for a panel title
 var TitleStyle = lipgloss.NewStyle().
-	Foreground(lipgloss.Color("#b8bb26")).
-	Bold(true)
+	Foreground(lipgloss.Color("#fabd2f")).
+	Bold(true).
+	PaddingLeft(1)
 
 // HighlightStyle defines the style for highlighted items
 var HighlightStyle = lipgloss.NewStyle().
-	Foreground(lipgloss.Color("#fe8019")).
+	Foreground(lipgloss.Color("#b8bb26")).
 	Bold(true)
 
 // ErrorStyle defines the style for error messages
 var ErrorStyle = lipgloss.NewStyle().
 	Foreground(lipgloss.Color("#fb4934")).
 	Bold(true)
+
+// SelectedItemStyle defines the style for selected items in lists
+var SelectedItemStyle = lipgloss.NewStyle().
+	Foreground(lipgloss.Color("#83a598")).
+	Background(lipgloss.Color("#3c3836")).
+	Bold(true)
+
+// HeaderStyle defines the style for panel headers
+var HeaderStyle = lipgloss.NewStyle().
+	Background(lipgloss.Color("#3c3836")).
+	Foreground(lipgloss.Color("#ebdbb2")).
+	Bold(true).
+	Padding(0, 1)
+
+// StatusStyle defines the style for status bars
+var StatusStyle = lipgloss.NewStyle().
+	Background(lipgloss.Color("#282828")).
+	Foreground(lipgloss.Color("#a89984")).
+	Padding(0, 1)
 
 // Panel represents a UI panel
 type Panel interface {
@@ -179,32 +200,29 @@ func (p *ScriptsPanel) Update(msg tea.Msg) (Panel, tea.Cmd) {
 
 // View renders the panel
 func (p *ScriptsPanel) View() string {
-	// Update the list dimensions
-	p.scriptList.SetSize(p.width, p.height-2)
+	// In a 4-panel grid, we need to be more economical with space
+	availableHeight := p.height - 2 // Reserve 2 lines for status
+	if availableHeight < 1 {
+		availableHeight = 1
+	}
 
-	// Super compact view
+	// Update the list dimensions for compact display
+	p.scriptList.SetSize(p.width, availableHeight)
+
+	// Create a minimal compact view for small panels
+	var statusInfo string
 	if p.loading {
-		return fmt.Sprintf("%s - Running: %s",
-			TitleStyle.Render(p.title),
-			p.activeScript)
+		statusInfo = HighlightStyle.Render("⟳ " + p.activeScript)
+	} else if p.error != "" {
+		statusInfo = ErrorStyle.Render(p.error)
+	} else if _, ok := p.scriptList.SelectedItem().(scriptItem); ok {
+		statusInfo = fmt.Sprintf("[↵]Run")
 	}
 
-	if p.error != "" {
-		return fmt.Sprintf("%s\n%s",
-			TitleStyle.Render(p.title),
-			ErrorStyle.Render(p.error))
-	}
-
-	// Even more compact view with minimal formatting
-	var scriptCmd string
-	if i, ok := p.scriptList.SelectedItem().(scriptItem); ok {
-		scriptCmd = i.script.Command
-	}
-
-	return fmt.Sprintf("%s\n%s\n%s",
-		TitleStyle.Render(p.title),
+	// Ultra compact view with minimal status line
+	return fmt.Sprintf("%s\n%s",
 		p.scriptList.View(),
-		fmt.Sprintf("Cmd: %s | [↵]Run [↑↓]Nav", scriptCmd))
+		statusInfo)
 }
 
 // Width returns the panel width
@@ -219,9 +237,29 @@ func (p *ScriptsPanel) Height() int {
 
 // SetSize sets the panel size
 func (p *ScriptsPanel) SetSize(width, height int) {
+	// Ensure minimum dimensions
+	if width < 10 {
+		width = 10
+	}
+	if height < 5 {
+		height = 5
+	}
+
 	p.width = width
 	p.height = height
-	p.scriptList.SetSize(width, height-2)
+
+	// Adjust list size to account for borders and status line
+	listWidth := width - 2
+	listHeight := height - 3
+
+	if listWidth < 5 {
+		listWidth = 5
+	}
+	if listHeight < 2 {
+		listHeight = 2
+	}
+
+	p.scriptList.SetSize(listWidth, listHeight)
 }
 
 // Title returns the panel title
@@ -708,85 +746,68 @@ func (p *PackagesPanel) refreshPackageList() {
 
 // View renders the panel
 func (p *PackagesPanel) View() string {
-	// Update the list dimensions
-	p.packageList.SetSize(p.width, p.height-2)
-	p.actionList.SetSize(p.width, p.height-4)
+	// In a 4-panel grid, we need to be more economical with space
+	availableHeight := p.height - 2 // Reserve 2 lines for status
+	if availableHeight < 1 {
+		availableHeight = 1
+	}
+
+	// Update the list dimensions for compact display
+	p.packageList.SetSize(p.width, availableHeight)
+	p.actionList.SetSize(p.width, availableHeight)
 
 	// Spinner style for loading animation
 	spinnerStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#b8bb26")).Bold(true)
 
-	// Extreme compact view
+	// Show appropriate content based on panel state
 	if p.loading {
 		spinnerChar := spinnerStyle.Render(p.spinnerFrames[p.spinner])
-		return fmt.Sprintf("%s %s Working...",
-			TitleStyle.Render(p.title),
-			spinnerChar)
+		return fmt.Sprintf("%s\n%s",
+			p.packageList.View(),
+			spinnerChar+" Working...")
 	}
 
 	if p.error != "" {
 		return fmt.Sprintf("%s\n%s",
-			TitleStyle.Render(p.title),
+			p.packageList.View(),
 			ErrorStyle.Render(p.error))
 	}
 
-	// Show confirmation dialog
+	// Show confirmation dialog more compactly
 	if p.showConfirm {
-		confirmStyle := lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("#fabd2f")).
-			Padding(1, 2).
-			Width(p.width - 10)
-
-		return confirmStyle.Render(
-			fmt.Sprintf("%s\n\n[y] Yes  [n] No",
-				p.confirmMessage))
+		return fmt.Sprintf("%s\n%s",
+			p.confirmMessage,
+			"[y]Yes [n]No")
 	}
 
 	// Show action selection mode
 	if p.showActions {
-		return fmt.Sprintf("%s\n%s\n%s",
-			TitleStyle.Render("Select Action"),
+		return fmt.Sprintf("%s\n%s",
 			p.actionList.View(),
 			"[↵]Select [esc]Cancel")
 	}
 
 	// Show input mode
 	if p.showInput {
-		return fmt.Sprintf("%s\n%s: %s",
-			TitleStyle.Render(p.title),
-			p.input.Placeholder,
+		return fmt.Sprintf("%s\n%s",
+			p.packageList.View(),
 			p.input.View())
 	}
 
-	// Show success message if we just completed an operation
-	if p.statusMessage != "" && time.Since(p.statusTime) < 3*time.Second {
-		successStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#b8bb26")).Bold(true)
-		return fmt.Sprintf("%s\n%s\n%s",
-			TitleStyle.Render(p.title),
-			successStyle.Render(p.statusMessage),
-			p.packageList.View())
-	}
-
-	// Get the selected package details for better info display
-	var packageDetails string
+	// Get the selected package details for status line
+	var statusInfo string
 	if i, ok := p.packageList.SelectedItem().(packageItem); ok {
-		pkgType := "regular"
 		if i.pkg.Type == "devDependency" {
-			pkgType = "dev"
+			statusInfo = "[i]Install [d]Del [dev]"
+		} else {
+			statusInfo = "[i]Install [d]Del"
 		}
-
-		packageDetails = fmt.Sprintf("%s (%s) - %s",
-			i.pkg.Name,
-			i.pkg.Version,
-			pkgType)
 	}
 
-	// Ultra compact list view with minimal help
-	return fmt.Sprintf("%s\n%s\n%s\n%s",
-		TitleStyle.Render(p.title),
+	// Ultra compact view
+	return fmt.Sprintf("%s\n%s",
 		p.packageList.View(),
-		packageDetails,
-		"[a]Actions [i]Install [d]Del [o]Chk [u]Upd")
+		statusInfo)
 }
 
 // Width returns the panel width
@@ -801,10 +822,30 @@ func (p *PackagesPanel) Height() int {
 
 // SetSize sets the panel size
 func (p *PackagesPanel) SetSize(width, height int) {
+	// Ensure minimum dimensions
+	if width < 10 {
+		width = 10
+	}
+	if height < 5 {
+		height = 5
+	}
+
 	p.width = width
 	p.height = height
-	p.packageList.SetSize(width, height-2)
-	p.actionList.SetSize(width, height-4)
+
+	// Adjust list sizes to account for borders and status line
+	listWidth := width - 2
+	listHeight := height - 3
+
+	if listWidth < 5 {
+		listWidth = 5
+	}
+	if listHeight < 2 {
+		listHeight = 2
+	}
+
+	p.packageList.SetSize(listWidth, listHeight)
+	p.actionList.SetSize(listWidth, height-4)
 }
 
 // Title returns the panel title
@@ -822,14 +863,15 @@ type LogsPanel struct {
 	spinner       int
 	spinnerFrames []string
 	lastUpdate    time.Time
+	maxLogHistory int
 }
 
 // NewLogsPanel creates a new logs panel
 func NewLogsPanel() *LogsPanel {
 	viewport := viewport.New(0, 0)
 	viewport.Style = lipgloss.NewStyle().
-		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("#3c3836"))
+		PaddingLeft(1).
+		PaddingRight(1)
 
 	// Spinner animation frames
 	spinnerFrames := []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
@@ -841,6 +883,7 @@ func NewLogsPanel() *LogsPanel {
 		spinner:       0,
 		spinnerFrames: spinnerFrames,
 		lastUpdate:    time.Now(),
+		maxLogHistory: 100, // Limit log history to prevent memory bloat
 	}
 }
 
@@ -865,37 +908,74 @@ func (p *LogsPanel) Update(msg tea.Msg) (Panel, tea.Cmd) {
 }
 
 // AddLog adds a log message
-func (p *LogsPanel) AddLog(log string) {
+func (p *LogsPanel) AddLog(message string) {
 	timestamp := time.Now().Format("15:04:05")
-	formattedLog := fmt.Sprintf("[%s] %s", timestamp, log)
-	p.logs = append(p.logs, formattedLog)
-	p.viewport.SetContent(strings.Join(p.logs, "\n"))
-	p.viewport.GotoBottom()
+	logEntry := fmt.Sprintf("[%s] %s", timestamp, message)
+
+	// Add the log to the top for newest-first ordering
+	p.logs = append([]string{logEntry}, p.logs...)
+
+	// Limit log history to prevent memory bloat
+	if len(p.logs) > p.maxLogHistory {
+		p.logs = p.logs[:p.maxLogHistory]
+	}
+
+	// Update the viewport content
+	p.updateViewportContent()
+}
+
+// updateViewportContent updates the viewport content with the current logs
+func (p *LogsPanel) updateViewportContent() {
+	// Join all logs with newlines, most recent first
+	content := strings.Join(p.logs, "\n")
+
+	// Update the viewport content
+	p.viewport.SetContent(content)
+
+	// Auto-scroll to top (most recent logs)
+	p.viewport.GotoTop()
 }
 
 // View renders the panel
 func (p *LogsPanel) View() string {
-	// For real-time animation, we show the spinner
-	spinnerStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#b8bb26"))
-	spinnerChar := spinnerStyle.Render(p.spinnerFrames[p.spinner])
-
-	// Minimal logs view without border or title
-	content := ""
-	if len(p.logs) > 0 {
-		// Show only the last few log lines to save space
-		maxLogs := 5
-		startIdx := len(p.logs) - maxLogs
-		if startIdx < 0 {
-			startIdx = 0
-		}
-
-		shortLogs := p.logs[startIdx:]
-		content = strings.Join(shortLogs, "\n")
-	} else {
-		content = "No logs yet"
+	// Ensure we have reasonable dimensions
+	if p.width < 10 {
+		p.width = 10
+	}
+	if p.height < 3 {
+		p.height = 3
 	}
 
-	return fmt.Sprintf("%s %s", spinnerChar, content)
+	// Make sure viewport size is properly set
+	viewportWidth := p.width - 2   // Account for borders
+	viewportHeight := p.height - 1 // Minimal height for logs
+
+	if viewportWidth < 5 {
+		viewportWidth = 5
+	}
+
+	if viewportHeight < 1 {
+		viewportHeight = 1
+	}
+
+	p.viewport.Width = viewportWidth
+	p.viewport.Height = viewportHeight
+
+	// For compact view, maybe show only the most recent few logs
+	// Create a condensed view with less lines
+	maxLogs := 50
+	if len(p.logs) > maxLogs {
+		recentLogs := p.logs[:maxLogs]
+		p.viewport.SetContent(strings.Join(recentLogs, "\n"))
+	} else {
+		p.viewport.SetContent(strings.Join(p.logs, "\n"))
+	}
+
+	// Auto-scroll to top (most recent logs)
+	p.viewport.GotoTop()
+
+	// Render the viewport without adding extra space
+	return p.viewport.View()
 }
 
 // Width returns the panel width
@@ -910,10 +990,31 @@ func (p *LogsPanel) Height() int {
 
 // SetSize sets the panel size
 func (p *LogsPanel) SetSize(width, height int) {
+	// Ensure minimum dimensions
+	if width < 10 {
+		width = 10
+	}
+	if height < 2 {
+		height = 2
+	}
+
 	p.width = width
 	p.height = height
-	p.viewport.Width = width
-	p.viewport.Height = height
+
+	// Update viewport dimensions with constraints
+	viewportWidth := width - 2   // Account for borders
+	viewportHeight := height - 1 // Minimal space for logs
+
+	if viewportWidth < 5 {
+		viewportWidth = 5
+	}
+
+	if viewportHeight < 1 {
+		viewportHeight = 1
+	}
+
+	p.viewport.Width = viewportWidth
+	p.viewport.Height = viewportHeight
 }
 
 // Title returns the panel title

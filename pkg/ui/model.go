@@ -255,6 +255,71 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		// Update the model dimensions
+		m.width = msg.Width
+		m.height = msg.Height
+
+		// Update panel dimensions when terminal size changes
+		if m.ready {
+			// Get actual terminal dimensions
+			termWidth := m.width
+			termHeight := m.height
+
+			// Ensure minimum dimensions
+			if termWidth < 80 {
+				termWidth = 80
+			}
+			if termHeight < 24 {
+				termHeight = 24
+			}
+
+			// Reserve space for top and bottom bars
+			availableHeight := termHeight - 2
+
+			// Calculate panel dimensions - 4 equal panels in a grid (2x2)
+			topRowHeight := availableHeight * 4 / 5
+			if topRowHeight < 8 {
+				topRowHeight = 8
+			}
+
+			bottomRowHeight := availableHeight - topRowHeight - 1 // -1 for gap
+			if bottomRowHeight < 3 {
+				bottomRowHeight = 3
+			}
+
+			// Calculate panel widths - divide available width into 2 columns
+			columnWidth := termWidth/2 - 1 // -1 for gap between columns
+			if columnWidth < 35 {
+				columnWidth = 35
+			}
+
+			// Ensure we don't exceed available width
+			if columnWidth*2+1 > termWidth {
+				columnWidth = (termWidth - 1) / 2
+			}
+
+			// Update all panel sizes based on their position in the layout
+			for name, panel := range m.panels {
+				if name == "logs" {
+					panel.SetSize(termWidth-2, bottomRowHeight-2)
+				} else {
+					// All other panels get equal size in the grid
+					panel.SetSize(columnWidth-2, topRowHeight/2-2)
+				}
+			}
+
+			// Update help panel size
+			if m.helpPanel != nil {
+				m.helpPanel.SetSize(termWidth, termHeight)
+			}
+
+			// Update help model width
+			m.help.Width = termWidth
+		}
+
+		return m, nil
+
 	case tea.KeyMsg:
 		// Check if any panel has active input or confirmation dialog - if so, pass the event to that panel
 		if m.ready && !m.showHelp {
@@ -303,30 +368,56 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.detectProject
 		}
 
-		// Check if Up/Down keys are for panel selection (left side) or content navigation (right side)
-		// This happens when Alt/Option key is held with Up/Down
-		if m.ready && !m.showHelp && (key.Matches(msg, m.keys.PanelUp) || key.Matches(msg, m.keys.PanelDown)) {
-			// Navigation between panels in left side
-			panels := []string{"scripts", "packages", "project", "npx"}
-			if key.Matches(msg, m.keys.PanelUp) {
-				for i, panel := range panels {
-					if panel == m.activeTab && i > 0 {
-						m.activeTab = panels[i-1]
-						return m, nil
-					}
-				}
-			} else { // PanelDown
-				for i, panel := range panels {
-					if panel == m.activeTab && i < len(panels)-1 {
-						m.activeTab = panels[i+1]
-						return m, nil
-					}
+		// Pass Tab key to switch panels
+		if msg.String() == "tab" && m.ready {
+			panels := []string{"scripts", "packages", "project", "npx", "logs"}
+			for i, panel := range panels {
+				if panel == m.activeTab {
+					// Move to the next panel
+					nextIndex := (i + 1) % len(panels)
+					m.activeTab = panels[nextIndex]
+					break
 				}
 			}
 			return m, nil
 		}
 
-		// For regular Up/Down keys, pass them to the panel for content navigation
+		// Check if Up/Down keys are for panel selection (left side) or content navigation (right side)
+		// This happens when Alt/Option key is held with Up/Down
+		if m.ready && !m.showHelp {
+			switch {
+			case key.Matches(msg, m.keys.PanelUp):
+				// Navigate panels up
+				panels := []string{"scripts", "packages", "project", "npx", "logs"}
+				for i, panel := range panels {
+					if panel == m.activeTab {
+						// Move to the previous panel
+						prevIndex := i - 1
+						if prevIndex < 0 {
+							prevIndex = len(panels) - 1
+						}
+						m.activeTab = panels[prevIndex]
+						break
+					}
+				}
+				return m, nil
+
+			case key.Matches(msg, m.keys.PanelDown):
+				// Navigate panels down
+				panels := []string{"scripts", "packages", "project", "npx", "logs"}
+				for i, panel := range panels {
+					if panel == m.activeTab {
+						// Move to the next panel
+						nextIndex := (i + 1) % len(panels)
+						m.activeTab = panels[nextIndex]
+						break
+					}
+				}
+				return m, nil
+			}
+		}
+
+		// Pass the key event to the active panel
 		if m.ready && !m.showHelp {
 			if panel, ok := m.panels[m.activeTab]; ok {
 				updatedPanel, cmd := panel.Update(msg)
@@ -335,29 +426,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
-	case tea.WindowSizeMsg:
-		// Store the window size for responsive rendering
-		m.width = msg.Width
-		m.height = msg.Height
-		m.help.Width = msg.Width
-
-		// Always update help panel size
-		if m.helpPanel != nil {
-			m.helpPanel.SetSize(m.width, m.height)
-		}
-
-		// Update panel sizes
-		contentWidth := m.width - 6
-		contentHeight := m.height - 8
-
-		if m.ready {
-			for _, panel := range m.panels {
-				panel.SetSize(contentWidth, contentHeight)
-			}
-		}
-
 	case errorMsg:
 		m.error = string(msg)
+		return m, nil
 
 	case projectDetectedMsg:
 		// Save the project info
@@ -446,30 +517,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	// Update panel dimensions after updating the model dimensions
-	if m.width > 0 && m.height > 0 && m.ready {
-		// Calculate heights with minimal padding
-		mainHeight := int(float64(m.height)*0.85) - 1 // -1 for header
-		if mainHeight < 10 {
-			mainHeight = 10
-		}
-		logsHeight := m.height - mainHeight - 1
-		if logsHeight < 3 {
-			logsHeight = 3
-		}
-
-		// Set panel sizes with full width
-		m.panels["scripts"].SetSize(m.width, mainHeight)
-		m.panels["packages"].SetSize(m.width, mainHeight)
-		m.panels["logs"].SetSize(m.width, logsHeight)
-
-		// Always set help panel size regardless of ready state
-		if m.helpPanel != nil {
-			m.helpPanel.SetSize(m.width, m.height)
-		}
-		m.help.Width = m.width
-	}
-
 	return m, tea.Batch(cmds...)
 }
 
@@ -493,7 +540,6 @@ func (m Model) View() string {
 		Bold(true).
 		Foreground(lipgloss.Color("#ebdbb2")).
 		Background(lipgloss.Color("#3c3836")).
-		Width(m.width).
 		Padding(0, 1)
 
 	statusStyle := topBarStyle.Copy()
@@ -505,177 +551,123 @@ func (m Model) View() string {
 		Padding(0, 0).
 		Margin(0, 0)
 
-	selectedStyle := lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("#b8bb26"))
+	selectedPanelStyle := panelStyle.Copy().
+		BorderForeground(lipgloss.Color("#b8bb26"))
 
 	titleStyle := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(lipgloss.Color("#fabd2f")).
 		Padding(0, 1)
 
-	// Calculate panel dimensions
-	leftPanelWidth := m.width / 4
-	if leftPanelWidth < 20 {
-		leftPanelWidth = 20
+	// Get actual terminal dimensions
+	termWidth := m.width
+	termHeight := m.height
+
+	// Ensure minimum dimensions
+	if termWidth < 80 {
+		termWidth = 80
+	}
+	if termHeight < 24 {
+		termHeight = 24
 	}
 
-	rightPanelWidth := m.width - leftPanelWidth - 3 // Account for borders
+	// Reserve space for top and bottom bars
+	availableHeight := termHeight - 2
 
-	topPanelsHeight := m.height * 2 / 3
-	if topPanelsHeight < 10 {
-		topPanelsHeight = 10
+	// Calculate panel dimensions - 4 equal panels in a grid (2x2)
+	topRowHeight := availableHeight * 4 / 5
+	if topRowHeight < 8 {
+		topRowHeight = 8
 	}
 
-	bottomPanelHeight := m.height - topPanelsHeight - 4 // Account for status bars and borders
-	if bottomPanelHeight < 5 {
-		bottomPanelHeight = 5
+	bottomRowHeight := availableHeight - topRowHeight - 1 // -1 for gap
+	if bottomRowHeight < 3 {
+		bottomRowHeight = 3
+	}
+
+	// Calculate panel widths - divide available width into 2 columns
+	columnWidth := termWidth/2 - 1 // -1 for gap between columns
+	if columnWidth < 35 {
+		columnWidth = 35
+	}
+
+	// Ensure we don't exceed available width
+	if columnWidth*2+1 > termWidth {
+		columnWidth = (termWidth - 1) / 2
 	}
 
 	// Top status bar
-	statusBar := topBarStyle.Render(fmt.Sprintf("LazyNode - %s", m.project.Name))
+	statusBar := topBarStyle.Width(termWidth).
+		Render(fmt.Sprintf("LazyNode - %s", m.project.Name))
 
-	// Left panel (navigation)
-	leftPanelTitle := titleStyle.Render("Panel Selection (Alt+↑/↓)")
-	leftPanelContent := fmt.Sprintf("%s\n\n", leftPanelTitle)
-	panels := []string{"scripts", "packages", "project", "npx"}
-	panelNames := []string{"Scripts", "Packages", "Project", "NPX"}
+	// Prepare all panels
+	panelContents := make(map[string]string)
+	panelTitles := make(map[string]string)
 
-	for i, panel := range panels {
-		if panel == m.activeTab {
-			leftPanelContent += selectedStyle.Render(fmt.Sprintf("▶ %s\n", panelNames[i]))
+	// Set panel sizes and get content
+	for name, panel := range m.panels {
+		if name == "logs" {
+			panel.SetSize(termWidth-2, bottomRowHeight-2)
 		} else {
-			leftPanelContent += fmt.Sprintf("  %s\n", panelNames[i])
+			// All other panels get equal size in the grid
+			panel.SetSize(columnWidth-2, topRowHeight/2-2)
 		}
+
+		// Get panel content and title
+		panelContents[name] = panel.View()
+		panelTitles[name] = panel.Title()
 	}
 
-	leftPanel := panelStyle.
-		Width(leftPanelWidth).
-		Height(topPanelsHeight).
-		Render(leftPanelContent)
+	// Render panel with proper styling and highlighting active panel
+	renderPanel := func(name string, width, height int) string {
+		content := fmt.Sprintf("%s\n%s",
+			titleStyle.Render(panelTitles[name]),
+			panelContents[name])
 
-	// Right panel (content)
-	var mainContent string
-	var rightPanelTitle string
+		style := panelStyle
+		if name == m.activeTab {
+			style = selectedPanelStyle
+		}
 
-	if panel, ok := m.panels[m.activeTab]; ok {
-		// Temporarily set the panel size to fit in our layout
-		panel.SetSize(rightPanelWidth-2, topPanelsHeight-2) // Adjust for borders
-		mainContent = panel.View()
-		rightPanelTitle = panel.Title()
+		return style.
+			Width(width).
+			Height(height).
+			Render(content)
 	}
 
-	// Add a custom header to the right panel
-	rightPanelContent := fmt.Sprintf("%s (↑/↓ to navigate)\n%s",
-		titleStyle.Render(rightPanelTitle),
-		mainContent,
-	)
+	// Render all panels
+	topLeftRendered := renderPanel("scripts", columnWidth, topRowHeight/2)
+	topRightRendered := renderPanel("packages", columnWidth, topRowHeight/2)
+	bottomLeftRendered := renderPanel("project", columnWidth, topRowHeight/2)
+	bottomRightRendered := renderPanel("npx", columnWidth, topRowHeight/2)
+	logsRendered := renderPanel("logs", termWidth, bottomRowHeight)
 
-	rightPanel := panelStyle.
-		Width(rightPanelWidth).
-		Height(topPanelsHeight).
-		Render(rightPanelContent)
+	// Layout the panels
+	topLeftRow := lipgloss.JoinHorizontal(lipgloss.Top, topLeftRendered, topRightRendered)
+	bottomLeftRow := lipgloss.JoinHorizontal(lipgloss.Top, bottomLeftRendered, bottomRightRendered)
+	topGrid := lipgloss.JoinVertical(lipgloss.Left, topLeftRow, bottomLeftRow)
 
-	// Command log title with real-time animation
-	activeSpinner := ""
-
-	// Add spinner animation for active operations
-	if m.activeTab == "packages" {
-		if packagesPanel, ok := m.panels["packages"].(*PackagesPanel); ok && packagesPanel.loading {
-			spinnerStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#b8bb26"))
-			activeSpinner = spinnerStyle.Render(packagesPanel.spinnerFrames[packagesPanel.spinner]) + " "
-		}
-	} else if m.activeTab == "scripts" {
-		if scriptsPanel, ok := m.panels["scripts"].(*ScriptsPanel); ok && scriptsPanel.activeScript != "" {
-			spinnerStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#b8bb26"))
-			// Use logs panel's spinner for animation
-			if logsPanel, ok := m.panels["logs"].(*LogsPanel); ok {
-				activeSpinner = spinnerStyle.Render(logsPanel.spinnerFrames[logsPanel.spinner]) + " "
-			}
-		}
+	// Help bar at the bottom
+	helpText := "[q]Quit [?]Help [Tab]Switch panels [1-5]Select panel [↵]Select"
+	if m.activeTab == "scripts" {
+		helpText += " | [r]Run script"
+	} else if m.activeTab == "packages" {
+		helpText += " | [i]Install [d]Delete [u]Update"
 	}
+	helpBar := statusStyle.Width(termWidth).Render(helpText)
 
-	commandLogTitle := titleStyle.Render("Command Log " + activeSpinner)
-
-	// Show the active command if one is running, or just a prompt
-	commandLogContent := ""
-
-	// Check if there's an active input in packages panel
-	if m.activeTab == "packages" {
-		if packagesPanel, ok := m.panels["packages"].(*PackagesPanel); ok && packagesPanel.showInput {
-			inputMode := ""
-			switch packagesPanel.inputMode {
-			case "install":
-				inputMode = "install"
-			case "install-dev":
-				inputMode = "install --save-dev"
-			case "uninstall":
-				inputMode = "uninstall"
-			case "update":
-				inputMode = "update"
-			}
-			commandLogContent = fmt.Sprintf("$ npm %s %s", inputMode, packagesPanel.input.Value())
-		} else if packagesPanel.loading {
-			commandLogContent = "$ npm install ... working"
-		} else {
-			commandLogContent = "$ npm install <package>"
-		}
-	} else if m.activeTab == "scripts" {
-		if scriptsPanel, ok := m.panels["scripts"].(*ScriptsPanel); ok && scriptsPanel.activeScript != "" {
-			commandLogContent = fmt.Sprintf("$ npm run %s", scriptsPanel.activeScript)
-		} else {
-			commandLogContent = "$ npm run <script>"
-		}
-	} else if m.activeTab == "npx" {
-		if npxPanel, ok := m.panels["npx"].(*NpxPanel); ok && npxPanel.showInput {
-			commandLogContent = fmt.Sprintf("$ npx %s", npxPanel.input.Value())
-		} else {
-			commandLogContent = "$ npx <command>"
-		}
-	} else {
-		commandLogContent = "$ npm <command>"
-	}
-
-	// Format the logs panel with a command log section
-	commandLogStyle := lipgloss.NewStyle().
-		Background(lipgloss.Color("#21262d")).
-		Foreground(lipgloss.Color("#c9d1d9")).
-		Width(m.width-4).
-		Height(3).
-		Padding(0, 1)
-
-	commandLogFormatted := lipgloss.JoinVertical(
-		lipgloss.Left,
-		commandLogTitle,
-		commandLogStyle.Render(commandLogContent),
-	)
-
-	// Bottom panel (logs/commands)
-	logsPanel := m.panels["logs"]
-	logsPanel.SetSize(m.width-2, bottomPanelHeight-6) // Adjust for command log section
-
-	formattedLogs := lipgloss.JoinVertical(
-		lipgloss.Left,
-		commandLogFormatted,
-		logsPanel.View(),
-	)
-
-	bottomPanel := panelStyle.
-		Width(m.width).
-		Height(bottomPanelHeight).
-		Render(formattedLogs)
-
-	// Bottom status bar with keybindings
-	helpBar := statusStyle.Render("[q]Quit [?]Help [↑↓]Navigate panel content [alt+↑↓]Switch panels [↵]Select [i]Install [d]Delete")
-
-	// Layout the UI
-	topPanels := lipgloss.JoinHorizontal(lipgloss.Top, leftPanel, rightPanel)
-
-	return lipgloss.JoinVertical(
+	// Complete layout
+	ui := lipgloss.JoinVertical(
 		lipgloss.Left,
 		statusBar,
-		topPanels,
-		bottomPanel,
+		topGrid,
+		logsRendered,
 		helpBar,
 	)
+
+	// Final trim to ensure we don't exceed terminal dimensions
+	return lipgloss.NewStyle().
+		MaxWidth(termWidth).
+		MaxHeight(termHeight).
+		Render(ui)
 }

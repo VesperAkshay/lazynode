@@ -2,12 +2,10 @@ package ui
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/VesperAkshay/lazynode/pkg/project"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 // ProjectPanel displays and manages package.json
@@ -140,79 +138,38 @@ func (p *ProjectPanel) Update(msg tea.Msg) (Panel, tea.Cmd) {
 
 // View renders the panel
 func (p *ProjectPanel) View() string {
-	// Show loading or error
-	if p.loading {
-		return PanelStyle.Width(p.width).Height(p.height).Render(
-			fmt.Sprintf("%s\n\nSaving...", TitleStyle.Render(p.title)),
-		)
-	}
-
-	if p.error != "" {
-		return PanelStyle.Width(p.width).Height(p.height).Render(
-			fmt.Sprintf("%s\n\n%s", TitleStyle.Render(p.title), ErrorStyle.Render(p.error)),
-		)
-	}
-
-	// Create the package.json view
-	keyStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#83a598")).
-		Bold(true)
-
-	valueStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#ebdbb2"))
-
-	// Show edit or view
+	// In a 4-panel grid, we need to be more economical with space
 	if p.mode == "edit" {
-		return PanelStyle.Width(p.width).Height(p.height).Render(
-			fmt.Sprintf("%s\n\nEditing %s\n\n%s",
-				TitleStyle.Render(p.title),
-				keyStyle.Render(p.editKey),
-				p.input.View(),
-			),
-		)
+		// Simple edit view
+		return fmt.Sprintf("%s:\n%s\n[↵]Save [esc]Cancel",
+			p.editKey,
+			p.input.View())
 	}
 
-	// Build the package.json view
-	var content strings.Builder
+	// Normal view
+	if p.error != "" {
+		return ErrorStyle.Render(p.error)
+	}
 
-	content.WriteString(fmt.Sprintf("%s: %s\n",
-		keyStyle.Render("name"),
-		valueStyle.Render(p.project.Name),
-	))
+	if p.loading {
+		return "Loading..."
+	}
 
-	content.WriteString(fmt.Sprintf("%s: %s\n",
-		keyStyle.Render("version"),
-		valueStyle.Render(p.project.Version),
-	))
+	// Show compact project info
+	var details string
+	details += fmt.Sprintf("Name: %s\n", p.project.Name)
+	details += fmt.Sprintf("Ver: %s\n", p.project.Version)
 
+	// Show just a few more fields to avoid overflowing
 	if p.project.Description != "" {
-		content.WriteString(fmt.Sprintf("%s: %s\n",
-			keyStyle.Render("description"),
-			valueStyle.Render(p.project.Description),
-		))
+		desc := p.project.Description
+		if len(desc) > p.width-10 {
+			desc = desc[:p.width-13] + "..."
+		}
+		details += fmt.Sprintf("Desc: %s", desc)
 	}
 
-	if p.project.Author != "" {
-		content.WriteString(fmt.Sprintf("%s: %s\n",
-			keyStyle.Render("author"),
-			valueStyle.Render(p.project.Author),
-		))
-	}
-
-	if p.project.License != "" {
-		content.WriteString(fmt.Sprintf("%s: %s\n",
-			keyStyle.Render("license"),
-			valueStyle.Render(p.project.License),
-		))
-	}
-
-	// Add help text
-	content.WriteString("\nPress the key to edit a field:\n")
-	content.WriteString("(e) name, (v) version, (d) description, (a) author, (l) license")
-
-	return PanelStyle.Width(p.width).Height(p.height).Render(
-		fmt.Sprintf("%s\n\n%s", TitleStyle.Render(p.title), content.String()),
-	)
+	return fmt.Sprintf("%s\n\n[e]Edit", details)
 }
 
 // Width returns the panel width
