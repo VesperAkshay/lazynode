@@ -1,6 +1,10 @@
 # LazyNode
 
 <p align="center">
+  <img src="docs/logo.png" alt="LazyNode Logo" width="300" />
+</p>
+
+<p align="center">
   <pre align="center">
   ██╗      █████╗ ███████╗██╗   ██╗███╗   ██╗ ██████╗ ██████╗ ███████╗
   ██║     ██╔══██╗╚══███╔╝╚██╗ ██╔╝████╗  ██║██╔═══██╗██╔══██╗██╔════╝
