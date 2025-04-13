@@ -41,6 +41,15 @@ changelog:
       - Merge pull request
       - Merge branch
 
+release:
+  github:
+    owner: VesperAkshay
+    name: lazynode
+  draft: false
+  prerelease: auto
+  mode: replace
+  name_template: "{{.Tag}}"
+
 brews:
   - name: lazynode
     tap:
