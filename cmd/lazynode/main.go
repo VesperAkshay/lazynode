@@ -5,32 +5,24 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/VesperAkshay/lazynode/pkg/ui"
+	"github.com/VesperAkshay/lazynode/pkg/version"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/lazynode/lazynode/pkg/ui"
-)
-
-// Version information set during build
-var (
-	Version   = "dev"
-	Commit    = "unknown"
-	BuildDate = "unknown"
 )
 
 func main() {
 	// Define command-line flags
-	versionFlag := flag.Bool("version", false, "Show version information")
+	versionFlag := flag.Bool("version", false, "Print version information and exit")
 	flag.Parse()
 
-	// Handle version flag
+	// If version flag is set, print version and exit
 	if *versionFlag {
-		fmt.Printf("LazyNode version %s\n", Version)
-		fmt.Printf("Commit: %s\n", Commit)
-		fmt.Printf("Built: %s\n", BuildDate)
+		fmt.Printf("LazyNode version %s\n", version.GetVersion())
 		os.Exit(0)
 	}
 
 	// Initialize the LazyNode application
-	fmt.Printf("Starting LazyNode %s - TUI for Node.js, npm, and npx\n", Version)
+	fmt.Printf("Starting LazyNode %s - TUI for Node.js, npm, and npx\n", version.GetVersion())
 
 	// Create our model
 	model := ui.NewModel()

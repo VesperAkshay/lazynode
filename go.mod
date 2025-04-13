@@ -1,4 +1,4 @@
-module github.com/lazynode/lazynode
+module github.com/VesperAkshay/lazynode
 
 go 1.24.2
 

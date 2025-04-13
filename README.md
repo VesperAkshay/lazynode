@@ -50,206 +50,66 @@ LazyNode is a feature-rich terminal user interface inspired by Lazygit that help
 
 ## Installation
 
-### Quick Install (Linux/macOS)
-
-```bash
-# Install the latest version with one command
-curl -sSL https://raw.githubusercontent.com/yourusername/lazynode/main/scripts/install.sh | bash
-```
-
-### From Pre-built Binaries (Recommended)
-
-1. Visit the [Releases](https://github.com/yourusername/lazynode/releases) page
-2. Download the appropriate package for your operating system:
-   - Windows: `lazynode_<version>_windows_amd64.zip`
-   - macOS (Intel): `lazynode_<version>_darwin_amd64.tar.gz`
-   - macOS (Apple Silicon): `lazynode_<version>_darwin_arm64.tar.gz`
-   - Linux (x86_64): `lazynode_<version>_linux_amd64.tar.gz`
-   - Linux (ARM64): `lazynode_<version>_linux_arm64.tar.gz`
-3. Extract the archive and make the binary executable
-
-#### Windows
-```powershell
-# Extract the zip file using Windows Explorer or:
-Expand-Archive lazynode_<version>_windows_amd64.zip -DestinationPath C:\some\directory
-
-# Add the directory to your PATH or move the executable somewhere in your PATH
-```
-
-#### macOS/Linux
-```bash
-# Extract
-tar xzvf lazynode_<version>_<os>_<arch>.tar.gz
-
-# Make executable
-chmod +x lazynode_<version>_<os>_<arch>
-
-# Move to a directory in your PATH
-sudo mv lazynode_<version>_<os>_<arch> /usr/local/bin/lazynode
-```
-
-### Using npm (Node.js)
-
-```bash
-# Install globally via npm
-npm install -g lazynode
-
-# Or use npx to run without installing
-npx lazynode
-```
-
-### Using Go Modules
-
-```bash
-# Install using go install
-go install github.com/yourusername/lazynode/cmd/lazynode@latest
-```
-
-### Arch Linux (AUR)
-
-```bash
-# Using an AUR helper like yay
-yay -S lazynode
-
-# Or manually from the AUR
-git clone https://aur.archlinux.org/lazynode.git
-cd lazynode
-makepkg -si
-```
-
-### Windows Package Managers
-
-#### Winget
-```powershell
-# Install using Windows Package Manager
-winget install lazynode
-```
-
-#### PowerShell
-```powershell
-# Install using PowerShell module
-Install-Module -Name LazyNode
-Import-Module LazyNode
-```
-
-#### Chocolatey
-```powershell
-# Install using Chocolatey
-choco install lazynode
-```
-
-#### Scoop
-```powershell
-# Install using Scoop
-scoop install lazynode
-```
-
 ### Using Go (from source)
 
-Prerequisites:
-- Go 1.19 or higher
-- Git
-
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/lazynode.git
+# Install directly using Go
+go install github.com/VesperAkshay/lazynode/cmd/lazynode@latest
 
-# Build the project
+# Or clone and build manually
+git clone https://github.com/VesperAkshay/lazynode.git
 cd lazynode
-make build
+go build -o lazynode cmd/lazynode/main.go
 
-# Install (optional)
-sudo make install
+# Move the binary to your PATH (optional)
+sudo mv lazynode /usr/local/bin/
 ```
 
-### Verify Installation
+### Pre-built Binaries
 
-Verify the installation by running:
+Download the pre-built binary for your platform from the [Releases](https://github.com/VesperAkshay/lazynode/releases) page.
 
+#### Quick Install Scripts
+
+**Linux/macOS:**
 ```bash
-lazynode --version
+curl -sSL https://raw.githubusercontent.com/VesperAkshay/lazynode/main/scripts/install.sh | bash
 ```
 
-This should display the version information for LazyNode.
+**Windows PowerShell (Run as Administrator):**
+```powershell
+iwr -useb https://raw.githubusercontent.com/VesperAkshay/lazynode/main/scripts/install.ps1 | iex
+```
 
-## Publishing to npm
+#### Manual Install
 
-Even though LazyNode is built with Go, you can publish it to npm to make it installable via npm/npx. Follow these steps:
-
-### Prerequisites
-
-1. Create an npm account at https://www.npmjs.com/signup
-2. Build your Go binaries for all platforms (Windows, macOS, Linux)
-3. Create GitHub releases with the binaries
-
-### Publishing Steps
-
-1. **Login to npm**:
-   ```bash
-   npm login
-   ```
-
-2. **Verify package.json settings**:
-   - Update the version in package.json
-   - Make sure your GitHub repository is correctly referenced
-   - Update author and other metadata as needed
-
-3. **Build Release Artifacts**:
-   ```bash
-   # Build for all platforms and create release archives
-   make release
-   
-   # Or manually:
-   GOOS=darwin GOARCH=amd64 go build -o ./dist/lazynode_0.1.0_darwin_amd64/lazynode
-   GOOS=darwin GOARCH=arm64 go build -o ./dist/lazynode_0.1.0_darwin_arm64/lazynode
-   GOOS=linux GOARCH=amd64 go build -o ./dist/lazynode_0.1.0_linux_amd64/lazynode
-   GOOS=windows GOARCH=amd64 go build -o ./dist/lazynode_0.1.0_windows_amd64/lazynode.exe
-   
-   # Create archives
-   tar -czf ./dist/lazynode_0.1.0_darwin_amd64.tar.gz -C ./dist/lazynode_0.1.0_darwin_amd64 lazynode
-   tar -czf ./dist/lazynode_0.1.0_darwin_arm64.tar.gz -C ./dist/lazynode_0.1.0_darwin_arm64 lazynode
-   tar -czf ./dist/lazynode_0.1.0_linux_amd64.tar.gz -C ./dist/lazynode_0.1.0_linux_amd64 lazynode
-   zip -j ./dist/lazynode_0.1.0_windows_amd64.zip ./dist/lazynode_0.1.0_windows_amd64/lazynode.exe
-   ```
-
-4. **Create a GitHub Release**:
-   - Create a new GitHub release for version v0.1.0
-   - Upload all archive files (.tar.gz and .zip)
-
-5. **Test the package locally**:
-   ```bash
-   # Pack without publishing
-   npm pack
-   
-   # Install the local package
-   npm install -g ./lazynode-0.1.0.tgz
-   ```
-
-6. **Publish to npm**:
-   ```bash
-   # Publish the package
-   npm publish
-   
-   # For scoped packages (optional)
-   npm publish --access public
-   ```
-
-7. **To update the package**:
-   ```bash
-   # Update version in package.json
-   npm version patch  # or minor or major
-   
-   # Build new binaries and create a new GitHub release
-   
-   # Publish the new version
-   npm publish
-   ```
-
-Once published, users can install LazyNode using:
+**Linux/macOS:**
 ```bash
-npm install -g lazynode
-# or
-npx lazynode
+# Download the latest release (example for Linux amd64)
+curl -L https://github.com/VesperAkshay/lazynode/releases/latest/download/lazynode_linux_amd64 -o lazynode
+
+# Make it executable
+chmod +x lazynode
+
+# Move to a directory in your PATH
+sudo mv lazynode /usr/local/bin/
+```
+
+**Windows:**
+Download the appropriate `.exe` file from the Releases page and add it to your PATH.
+
+### Package Managers
+
+#### Homebrew (macOS and Linux)
+```bash
+brew tap lazynode/lazynode
+brew install lazynode
+```
+
+#### Scoop (Windows)
+```powershell
+scoop bucket add lazynode https://github.com/lazynode/scoop-bucket.git
+scoop install lazynode
 ```
 
 ## Usage

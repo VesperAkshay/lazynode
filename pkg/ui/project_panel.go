@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/VesperAkshay/lazynode/pkg/project"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/lazynode/lazynode/pkg/project"
 )
 
 // ProjectPanel displays and manages package.json

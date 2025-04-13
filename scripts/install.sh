@@ -1,62 +1,62 @@
 #!/bin/bash
-# install.sh - LazyNode installation script for Linux and macOS
-
 set -e
 
-# Determine OS and architecture
-OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-ARCH=$(uname -m)
+# LazyNode installation script
+# Automatically detects OS and architecture and installs the appropriate binary
 
-# Map architecture to Go architecture naming
+# Detect OS and architecture
+OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
+ARCH="$(uname -m)"
+
+# Map architecture to Go arch
 if [ "$ARCH" = "x86_64" ]; then
-    ARCH="amd64"
+  ARCH="amd64"
 elif [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
-    ARCH="arm64"
+  ARCH="arm64"
 else
-    echo "Unsupported architecture: $ARCH"
-    exit 1
+  echo "Unsupported architecture: $ARCH"
+  exit 1
 fi
 
-# Get the latest version from GitHub
-VERSION=$(curl -s https://api.github.com/repos/yourusername/lazynode/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
-VERSION=${VERSION#v} # Remove 'v' prefix if present
+# Get the latest version
+VERSION=$(curl -s https://api.github.com/repos/VesperAkshay/lazynode/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' | sed 's/v//')
 
-echo "Installing LazyNode $VERSION for $OS/$ARCH..."
+if [ -z "$VERSION" ]; then
+  echo "Could not determine the latest version. Please check your internet connection."
+  exit 1
+fi
 
-# Create temporary directory
+# Determine download URL
+DOWNLOAD_URL="https://github.com/VesperAkshay/lazynode/releases/download/v${VERSION}/lazynode_${VERSION}_${OS}_${ARCH}.tar.gz"
+echo "Downloading LazyNode v${VERSION} for ${OS}/${ARCH}..."
+echo "URL: $DOWNLOAD_URL"
+
+# Create a temporary directory for the download
 TMP_DIR=$(mktemp -d)
-trap 'rm -rf "$TMP_DIR"' EXIT
+cd "$TMP_DIR"
 
-# Download the appropriate binary
-ARCHIVE="lazynode_${VERSION}_${OS}_${ARCH}.tar.gz"
-DOWNLOAD_URL="https://github.com/yourusername/lazynode/releases/download/v${VERSION}/${ARCHIVE}"
-
-echo "Downloading $DOWNLOAD_URL..."
-curl -L "$DOWNLOAD_URL" -o "$TMP_DIR/$ARCHIVE"
-
-# Extract the archive
-echo "Extracting..."
-tar -xzf "$TMP_DIR/$ARCHIVE" -C "$TMP_DIR"
-
-# Install the binary
-BINARY="lazynode_${VERSION}_${OS}_${ARCH}"
-INSTALL_DIR="/usr/local/bin"
-
-echo "Installing to $INSTALL_DIR/lazynode..."
-if [ ! -d "$INSTALL_DIR" ]; then
-    mkdir -p "$INSTALL_DIR"
-fi
-
-if [ -w "$INSTALL_DIR" ]; then
-    # User has write permission
-    mv "$TMP_DIR/$BINARY" "$INSTALL_DIR/lazynode"
-    chmod +x "$INSTALL_DIR/lazynode"
+# Download and extract
+if command -v curl > /dev/null 2>&1; then
+  curl -L -o lazynode.tar.gz "$DOWNLOAD_URL"
 else
-    # Need sudo
-    echo "Elevated permissions required to install to $INSTALL_DIR"
-    sudo mv "$TMP_DIR/$BINARY" "$INSTALL_DIR/lazynode"
-    sudo chmod +x "$INSTALL_DIR/lazynode"
+  if command -v wget > /dev/null 2>&1; then
+    wget -O lazynode.tar.gz "$DOWNLOAD_URL"
+  else
+    echo "Error: Neither curl nor wget found. Please install one of them and try again."
+    exit 1
+  fi
 fi
 
-echo "LazyNode $VERSION has been installed to $INSTALL_DIR/lazynode"
-echo "Run 'lazynode --version' to verify the installation." 
+tar -xzf lazynode.tar.gz
+
+# Install
+echo "Installing LazyNode to /usr/local/bin (may require sudo)..."
+sudo mv lazynode /usr/local/bin/
+sudo chmod +x /usr/local/bin/lazynode
+
+# Clean up
+cd -
+rm -rf "$TMP_DIR"
+
+echo "LazyNode v${VERSION} has been installed successfully!"
+echo "You can now run 'lazynode' to start using it." 

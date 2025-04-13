@@ -6,36 +6,24 @@ on:
       - 'v*'
 
 jobs:
-  build:
-    name: Build and Release
+  goreleaser:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
+      
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.20'
-          
-      - name: Make scripts executable
-        run: chmod +x scripts/build.sh
-
-      - name: Build binaries
-        run: ./scripts/build.sh
-
-      - name: Create Release
-        id: create_release
-        uses: softprops/action-gh-release@v1
+          go-version: '1.24'
+      
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v5
         with:
-          files: |
-            dist/*.tar.gz
-            dist/*.zip
-            dist/*_checksums.txt
-          draft: false
-          prerelease: false
-          generate_release_notes: true
+          distribution: goreleaser
+          version: latest
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 

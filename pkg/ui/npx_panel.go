@@ -3,10 +3,10 @@ package ui
 import (
 	"fmt"
 
+	"github.com/VesperAkshay/lazynode/pkg/npx"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/lazynode/lazynode/pkg/npx"
 )
 
 // NpxPanel displays and manages npx commands

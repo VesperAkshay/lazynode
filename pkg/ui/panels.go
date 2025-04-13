@@ -5,13 +5,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/VesperAkshay/lazynode/pkg/npm"
+	"github.com/VesperAkshay/lazynode/pkg/scripts"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/lazynode/lazynode/pkg/npm"
-	"github.com/lazynode/lazynode/pkg/scripts"
 )
 
 // PanelStyle defines the style for a panel

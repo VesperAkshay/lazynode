@@ -1,50 +1,42 @@
-.PHONY: build clean run test release install
+.PHONY: build install clean test release
 
-# Default target
-all: build
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+LDFLAGS = -ldflags "-s -w -X github.com/VesperAkshay/lazynode/pkg/version.Version=$(VERSION)"
+BINARY_NAME = lazynode
 
-# Build for current platform
 build:
-	go build -o bin/lazynode cmd/lazynode/main.go
+	go build $(LDFLAGS) -o $(BINARY_NAME) ./cmd/lazynode
 
-# Clean build artifacts
-clean:
-	rm -rf bin dist
-
-# Run the application
-run:
-	go run cmd/lazynode/main.go
-
-# Run tests
-test:
-	go test ./...
-
-# Create a new release
-release:
-	./scripts/build.sh
-
-# Install locally
 install: build
-	cp bin/lazynode /usr/local/bin/lazynode
+	mv $(BINARY_NAME) $(GOPATH)/bin/
 
-# Cross compile for all platforms
-crossbuild:
-	./scripts/build.sh
+clean:
+	rm -f $(BINARY_NAME)
+	rm -rf dist/
 
-# Generate docs
-docs:
-	mkdir -p docs
-	# Add doc generation commands here
+test:
+	go test -v ./...
 
-# Help command
-help:
-	@echo "LazyNode Make Targets:"
-	@echo "  build      - Build for current platform"
-	@echo "  clean      - Remove build artifacts"
-	@echo "  run        - Run the application"
-	@echo "  test       - Run tests"
-	@echo "  release    - Create release builds for all platforms"
-	@echo "  install    - Install locally (requires sudo)"
-	@echo "  crossbuild - Cross compile for all platforms"
-	@echo "  docs       - Generate documentation"
-	@echo "  help       - Show this help" 
+lint:
+	golangci-lint run
+
+# Create a new release (requires goreleaser and git tag)
+release:
+	goreleaser release --clean
+
+# Create a snapshot release for testing
+snapshot:
+	goreleaser release --snapshot --clean
+
+# Tag a new version - usage: make tag-release VERSION=1.0.0
+tag-release:
+	git tag -a v$(VERSION) -m "Release v$(VERSION)"
+	git push origin v$(VERSION)
+
+# Cross compile for major platforms
+cross-build:
+	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o $(BINARY_NAME)_linux_amd64 ./cmd/lazynode
+	GOOS=linux GOARCH=arm64 go build $(LDFLAGS) -o $(BINARY_NAME)_linux_arm64 ./cmd/lazynode
+	GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o $(BINARY_NAME)_darwin_amd64 ./cmd/lazynode
+	GOOS=darwin GOARCH=arm64 go build $(LDFLAGS) -o $(BINARY_NAME)_darwin_arm64 ./cmd/lazynode
+	GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o $(BINARY_NAME)_windows_amd64.exe ./cmd/lazynode 

@@ -5,14 +5,14 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/VesperAkshay/lazynode/pkg/npm"
+	"github.com/VesperAkshay/lazynode/pkg/npx"
+	"github.com/VesperAkshay/lazynode/pkg/project"
+	"github.com/VesperAkshay/lazynode/pkg/scripts"
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/lazynode/lazynode/pkg/npm"
-	"github.com/lazynode/lazynode/pkg/npx"
-	"github.com/lazynode/lazynode/pkg/project"
-	"github.com/lazynode/lazynode/pkg/scripts"
 )
 
 // KeyMap defines the keybindings for the application
