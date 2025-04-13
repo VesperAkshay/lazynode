@@ -5,10 +5,13 @@ on:
     tags:
       - 'v*'
 
+<<<<<<< HEAD
 permissions:
   contents: write
   packages: write
 
+=======
+>>>>>>> df556d6bcd5957da9c8f26842cff972b09a5c53e
 jobs:
   goreleaser:
     runs-on: ubuntu-latest
@@ -21,8 +24,12 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.24'
+<<<<<<< HEAD
+          go-version: '1.21'
           cache: true
+=======
+          go-version: '1.24'
+>>>>>>> df556d6bcd5957da9c8f26842cff972b09a5c53e
       
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v5
@@ -31,5 +38,10 @@ jobs:
           version: latest
           args: release --clean
         env:
+<<<<<<< HEAD
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAP_GITHUB_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
+
+=======
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+>>>>>>> df556d6bcd5957da9c8f26842cff972b09a5c53e
