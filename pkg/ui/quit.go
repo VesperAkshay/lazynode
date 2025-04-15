@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"math/rand"
 	"strings"
 	"time"
 
@@ -53,6 +54,7 @@ type QuitModel struct {
 	fadeSteps   int
 	currentStep int
 	messages    []string
+	particles   []Particle
 }
 
 // NewQuitModel creates a new quit screen model
@@ -61,6 +63,10 @@ func NewQuitModel() QuitModel {
 		"Thanks for using LazyNode!",
 		"See you soon!",
 		"Have a great day!",
+		"Happy coding!",
+		"Node.js projects made easier!",
+		"Until next time!",
+		"Keep building awesome things!",
 	}
 
 	return QuitModel{
@@ -68,13 +74,69 @@ func NewQuitModel() QuitModel {
 		startTime:   time.Now(),
 		displayTime: time.Second * 3, // Show quit screen for 3 seconds
 		fadeEffect:  FadeIn,
-		fadeSteps:   10,
+		fadeSteps:   15,
 		messages:    farewell,
+		particles:   make([]Particle, 0),
+	}
+}
+
+// generateParticles creates sparkling particles for the quit screen
+func (m *QuitModel) generateParticles() {
+	// Only generate particles if we have enough space
+	if m.width < 20 || m.height < 10 {
+		return
+	}
+
+	// Add new particles occasionally
+	if m.frame%2 == 0 && len(m.particles) < 100 {
+		// Create new particle at random position
+		x := float64(m.width/4 + rand.Intn(m.width/2))
+		y := float64(m.height/4 + rand.Intn(m.height/2))
+
+		// Random movement and appearance
+		vx := (rand.Float64() - 0.5) * 2
+		vy := (rand.Float64() - 0.5) * 2
+
+		// Sparkle characters
+		chars := []string{"✨", "•", "⋆", "✦", "✳", "✵", "*", "✺", "✹"}
+		char := chars[rand.Intn(len(chars))]
+
+		// Create glowing color with alpha based on fade effect
+		r, g, b := 220+rand.Intn(35), 220+rand.Intn(35), 160+rand.Intn(95)
+		color := lipgloss.Color(fmt.Sprintf("#%02x%02x%02x", r, g, b))
+
+		p := Particle{
+			x:        x,
+			y:        y,
+			vx:       vx,
+			vy:       vy,
+			char:     char,
+			color:    color,
+			lifespan: 20 + rand.Intn(30),
+		}
+		m.particles = append(m.particles, p)
+	}
+
+	// Update existing particles
+	for i := 0; i < len(m.particles); i++ {
+		p := &m.particles[i]
+		p.x += p.vx
+		p.y += p.vy
+		p.lifespan--
+
+		// Remove particles that are out of bounds or expired
+		if p.x < 0 || p.x >= float64(m.width) || p.y < 0 || p.y >= float64(m.height) || p.lifespan <= 0 {
+			m.particles = append(m.particles[:i], m.particles[i+1:]...)
+			i--
+		}
 	}
 }
 
 // Init initializes the quit screen
 func (m QuitModel) Init() tea.Cmd {
+	// Seed the random number generator for particles
+	rand.Seed(time.Now().UnixNano())
+
 	return tea.Tick(time.Millisecond*50, func(t time.Time) tea.Msg {
 		return tickMsg(t)
 	})
@@ -88,6 +150,12 @@ func (m QuitModel) Update(msg tea.Msg) (QuitModel, tea.Cmd) {
 		m.height = msg.Height
 
 	case tickMsg:
+		// Update frame counter
+		m.frame++
+
+		// Generate and update particles
+		m.generateParticles()
+
 		// Update fade effect
 		if m.fadeEffect == FadeIn && m.currentStep < m.fadeSteps {
 			m.currentStep++
@@ -171,8 +239,8 @@ func (m QuitModel) View() string {
 		alpha = float64(m.currentStep) / float64(m.fadeSteps)
 	}
 
-	// Get a random farewell message
-	selectedMessage := m.messages[int(time.Since(m.startTime).Seconds())%len(m.messages)]
+	// Get a random farewell message that changes periodically
+	selectedMessage := m.messages[int(time.Since(m.startTime).Seconds()*0.5)%len(m.messages)]
 
 	// Style the ASCII art with gradient colors and fading effect
 	artLines := strings.Split(quitArt, "\n")
@@ -208,32 +276,78 @@ func (m QuitModel) View() string {
 
 	coloredArt := strings.Join(coloredArtLines, "\n")
 
-	// Style the farewell message
-	farewellStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color(fmt.Sprintf("#%02x%02x%02x",
-			int(220*alpha),
-			int(220*alpha),
-			int(220*alpha)))).
-		Bold(true).
-		Italic(true)
+	// Style the farewell message with shimmer effect
+	shimmerPhase := m.frame % 20
+	shimmerPos := shimmerPhase * len(selectedMessage) / 20
 
-	farewell := farewellStyle.Render(selectedMessage)
+	var farewellParts []string
+	for i, char := range selectedMessage {
+		brightness := 220.0
+		// Add brightness to characters near the shimmer position
+		distFromShimmer := abs(i - shimmerPos)
+		if distFromShimmer < 5 {
+			brightness = 255.0 - float64(distFromShimmer)*10.0
+		}
+
+		charStyle := lipgloss.NewStyle().
+			Foreground(lipgloss.Color(fmt.Sprintf("#%02x%02x%02x",
+				int(brightness*alpha),
+				int(brightness*alpha),
+				int((brightness+20)*alpha)))).
+			Bold(true).
+			Italic(true)
+
+		farewellParts = append(farewellParts, charStyle.Render(string(char)))
+	}
+
+	farewell := strings.Join(farewellParts, "")
 
 	// Center the content
+	content := lipgloss.JoinVertical(
+		lipgloss.Center,
+		coloredArt,
+		"",
+		farewell,
+	)
+
+	// Place particles in a 2D grid
+	particleGrid := make([][]string, m.height)
+	for y := range particleGrid {
+		particleGrid[y] = make([]string, m.width)
+		for x := range particleGrid[y] {
+			particleGrid[y][x] = " "
+		}
+	}
+
+	// Add particles to the grid
+	for _, p := range m.particles {
+		x, y := int(p.x), int(p.y)
+		if x >= 0 && x < m.width && y >= 0 && y < m.height {
+			particleGrid[y][x] = lipgloss.NewStyle().
+				Foreground(p.color).
+				Render(p.char)
+		}
+	}
+
+	// Render the content in the center
 	centered := lipgloss.Place(
 		m.width,
 		m.height,
 		lipgloss.Center,
 		lipgloss.Center,
-		lipgloss.JoinVertical(
-			lipgloss.Center,
-			coloredArt,
-			"",
-			farewell,
-		),
+		content,
 	)
 
+	// For simplicity in terminal rendering, we'll just show the centered content with particles
 	return centered
+}
+
+// abs returns the absolute value of an integer
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
 }
 
 // IsDone indicates if the quit screen animation has completed

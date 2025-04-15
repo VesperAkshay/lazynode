@@ -326,14 +326,24 @@ type PackageAction struct {
 	Command     string
 }
 
-// GetPackageActions returns the available package actions
+// GetPackageActions returns the list of available package actions
 func GetPackageActions() []PackageAction {
 	return []PackageAction{
-		{Name: "Install", Description: "Install a package", Key: "i", Command: "install"},
-		{Name: "Install Dev", Description: "Install as dev dependency", Key: "I", Command: "install-dev"},
+		{Name: "Install", Description: "Install a new package", Key: "i", Command: "install"},
+		{Name: "Install as Dev Dependency", Description: "Install a new package as dev dependency", Key: "I", Command: "install-dev"},
 		{Name: "Uninstall", Description: "Uninstall a package", Key: "d", Command: "uninstall"},
 		{Name: "Update", Description: "Update a package", Key: "u", Command: "update"},
 		{Name: "Check Outdated", Description: "Check for outdated packages", Key: "o", Command: "outdated"},
+		{Name: "Link Package", Description: "Link a package to this project", Key: "l", Command: "link"},
+		{Name: "Unlink Package", Description: "Unlink a package from this project", Key: "L", Command: "unlink"},
+		{Name: "Link Global", Description: "Link this package globally", Key: "g", Command: "link-global"},
+		{Name: "Unlink Global", Description: "Unlink this package globally", Key: "G", Command: "unlink-global"},
+		{Name: "Build", Description: "Run npm build script", Key: "b", Command: "build"},
+		{Name: "Test", Description: "Run npm test script", Key: "t", Command: "test"},
+		{Name: "Publish", Description: "Publish package to npm registry", Key: "p", Command: "publish"},
+		{Name: "Edit Package.json", Description: "Open package.json in your default editor", Key: "e", Command: "edit"},
+		{Name: "Install All Dependencies", Description: "Install all dependencies from package.json", Key: "a", Command: "install-all"},
+		{Name: "Check Missing Dependencies", Description: "Check for missing dependencies and install them", Key: "m", Command: "check-missing"},
 	}
 }
 
@@ -496,6 +506,7 @@ func (p *PackagesPanel) executeAction(action PackageAction, packageName string) 
 
 	go func() {
 		var err error
+		var msg string
 		defer func() {
 			// Always reset UI state when done, whether successful or not
 			p.loading = false
@@ -510,25 +521,25 @@ func (p *PackagesPanel) executeAction(action PackageAction, packageName string) 
 		case "install":
 			err = p.packageManager.InstallPackage(packageName, false)
 			if err == nil {
-				p.statusMessage = fmt.Sprintf("✅ Installed %s", packageName)
+				msg = fmt.Sprintf("✅ Installed %s", packageName)
 				p.statusTime = time.Now()
 			}
 		case "install-dev":
 			err = p.packageManager.InstallPackage(packageName, true)
 			if err == nil {
-				p.statusMessage = fmt.Sprintf("✅ Installed %s (dev)", packageName)
+				msg = fmt.Sprintf("✅ Installed %s (dev)", packageName)
 				p.statusTime = time.Now()
 			}
 		case "uninstall":
 			err = p.packageManager.UninstallPackage(packageName)
 			if err == nil {
-				p.statusMessage = fmt.Sprintf("✅ Uninstalled %s", packageName)
+				msg = fmt.Sprintf("✅ Uninstalled %s", packageName)
 				p.statusTime = time.Now()
 			}
 		case "update":
 			err = p.packageManager.UpdatePackage(packageName)
 			if err == nil {
-				p.statusMessage = fmt.Sprintf("✅ Updated %s", packageName)
+				msg = fmt.Sprintf("✅ Updated %s", packageName)
 				p.statusTime = time.Now()
 			}
 		case "outdated":
@@ -536,17 +547,90 @@ func (p *PackagesPanel) executeAction(action PackageAction, packageName string) 
 			if err != nil {
 				p.error = fmt.Sprintf("Error checking outdated packages: %v", err)
 			} else if len(outdated) > 0 {
-				p.statusMessage = fmt.Sprintf("Found %d outdated packages", len(outdated))
+				msg = fmt.Sprintf("Found %d outdated packages", len(outdated))
 				p.statusTime = time.Now()
 			} else {
-				p.statusMessage = "All packages are up to date"
+				msg = "All packages are up to date"
 				p.statusTime = time.Now()
+			}
+		case "link":
+			err = p.packageManager.LinkPackage(packageName, false)
+			if err == nil {
+				msg = fmt.Sprintf("✅ Linked %s to this project", packageName)
+				p.statusTime = time.Now()
+			}
+		case "unlink":
+			err = p.packageManager.UnlinkPackage(packageName, false)
+			if err == nil {
+				msg = fmt.Sprintf("✅ Unlinked %s from this project", packageName)
+				p.statusTime = time.Now()
+			}
+		case "link-global":
+			err = p.packageManager.LinkPackage("", true)
+			if err == nil {
+				msg = "✅ Linked this package globally"
+				p.statusTime = time.Now()
+			}
+		case "unlink-global":
+			err = p.packageManager.UnlinkPackage("", true)
+			if err == nil {
+				msg = "✅ Unlinked this package globally"
+				p.statusTime = time.Now()
+			}
+		case "build":
+			err = p.packageManager.BuildPackage()
+			if err == nil {
+				msg = "✅ Build completed successfully"
+				p.statusTime = time.Now()
+			}
+		case "test":
+			err = p.packageManager.TestPackage()
+			if err == nil {
+				msg = "✅ Tests completed successfully"
+				p.statusTime = time.Now()
+			}
+		case "publish":
+			dryRun := packageName == "--dry-run"
+			err = p.packageManager.PublishPackage(dryRun)
+			if err == nil {
+				if dryRun {
+					msg = "✅ Publish dry run completed successfully"
+				} else {
+					msg = "✅ Package published successfully"
+				}
+				p.statusTime = time.Now()
+			}
+		case "edit":
+			err = p.packageManager.OpenEditor()
+			if err == nil {
+				msg = "✅ Opened package.json in editor"
+				p.statusTime = time.Now()
+			}
+		case "install-all":
+			// Install all dependencies
+			err = p.packageManager.InstallAllDependencies()
+			if err != nil {
+				msg = fmt.Sprintf("Error installing all dependencies: %v", err)
+			} else {
+				msg = "All dependencies installed successfully"
+			}
+		case "check-missing":
+			// Check for missing dependencies and install them if needed
+			installed, err := p.packageManager.InstallMissingDependencies()
+			if err != nil {
+				msg = fmt.Sprintf("Error checking/installing missing dependencies: %v", err)
+			} else if installed {
+				msg = "Missing dependencies installed successfully"
+			} else {
+				msg = "No missing dependencies found"
 			}
 		}
 
 		if err != nil {
 			p.error = fmt.Sprintf("Error: %v", err)
 		}
+
+		p.statusMessage = msg
 	}()
 }
 
@@ -688,10 +772,31 @@ func (p *PackagesPanel) Update(msg tea.Msg) (Panel, tea.Cmd) {
 		case !p.showInput && !p.showActions:
 			// Handle normal mode
 			switch msg.String() {
-			case "a":
+			case "x":
 				// Show action menu
 				p.showActions = true
 				p.actionList.Select(0)
+
+			case "a":
+				// Install all dependencies
+				for _, action := range p.actions {
+					if action.Command == "install-all" {
+						p.showConfirm = true
+						p.confirmMessage = "Are you sure you want to install all dependencies from package.json?"
+						p.confirmAction = action
+						p.confirmPackage = ""
+						break
+					}
+				}
+
+			case "m":
+				// Check for missing dependencies
+				for _, action := range p.actions {
+					if action.Command == "check-missing" {
+						p.executeAction(action, "")
+						break
+					}
+				}
 
 			case "i":
 				// Install a package
@@ -700,7 +805,7 @@ func (p *PackagesPanel) Update(msg tea.Msg) (Panel, tea.Cmd) {
 				p.input.Placeholder = "Package name to install"
 				p.input.Focus()
 
-			case "shift+i":
+			case "shift+i", "I":
 				// Install a dev package
 				p.showInput = true
 				p.inputMode = "install-dev"
@@ -741,6 +846,94 @@ func (p *PackagesPanel) Update(msg tea.Msg) (Panel, tea.Cmd) {
 					p.input.Placeholder = "Confirm update (enter package name)"
 					p.input.SetValue(i.pkg.Name)
 					p.input.Focus()
+				}
+
+			case "l":
+				// Link a package
+				p.showInput = true
+				p.inputMode = "link"
+				p.input.Placeholder = "Package name to link"
+				p.input.Focus()
+
+			case "shift+l", "L":
+				// Unlink a package
+				if i, ok := p.packageList.SelectedItem().(packageItem); ok {
+					if i.pkg.IsLinked {
+						for _, action := range p.actions {
+							if action.Command == "unlink" {
+								p.showConfirm = true
+								p.confirmMessage = fmt.Sprintf("Are you sure you want to unlink '%s'?", i.pkg.Name)
+								p.confirmAction = action
+								p.confirmPackage = i.pkg.Name
+								break
+							}
+						}
+					} else {
+						p.statusMessage = fmt.Sprintf("Package '%s' is not linked", i.pkg.Name)
+						p.statusTime = time.Now()
+					}
+				}
+
+			case "g":
+				// Link this package globally
+				for _, action := range p.actions {
+					if action.Command == "link-global" {
+						p.executeAction(action, "")
+						break
+					}
+				}
+
+			case "shift+g", "G":
+				// Unlink this package globally
+				for _, action := range p.actions {
+					if action.Command == "unlink-global" {
+						p.showConfirm = true
+						p.confirmMessage = "Are you sure you want to unlink this package globally?"
+						p.confirmAction = action
+						p.confirmPackage = ""
+						break
+					}
+				}
+
+			case "b":
+				// Build package
+				for _, action := range p.actions {
+					if action.Command == "build" {
+						p.executeAction(action, "")
+						break
+					}
+				}
+
+			case "t":
+				// Test package
+				for _, action := range p.actions {
+					if action.Command == "test" {
+						p.executeAction(action, "")
+						break
+					}
+				}
+
+			case "p":
+				// Publish package
+				p.showConfirm = true
+				p.confirmMessage = "Are you sure you want to publish this package to npm registry?"
+
+				// Find the publish action
+				for _, action := range p.actions {
+					if action.Command == "publish" {
+						p.confirmAction = action
+						p.confirmPackage = ""
+						break
+					}
+				}
+
+			case "e":
+				// Edit package.json
+				for _, action := range p.actions {
+					if action.Command == "edit" {
+						p.executeAction(action, "")
+						break
+					}
 				}
 
 			case "/":
@@ -803,68 +996,57 @@ func (p *PackagesPanel) refreshPackageList() {
 
 // View renders the panel
 func (p *PackagesPanel) View() string {
-	// In a 4-panel grid, we need to be more economical with space
-	availableHeight := p.height - 2 // Reserve 2 lines for status
-	if availableHeight < 1 {
-		availableHeight = 1
-	}
+	// Update the list dimensions
+	p.packageList.SetSize(p.width, p.height)
+	p.actionList.SetSize(p.width, p.height)
 
-	// Update the list dimensions for compact display
-	p.packageList.SetSize(p.width, availableHeight)
-	p.actionList.SetSize(p.width, availableHeight)
-
-	// Spinner style for loading animation
-	spinnerStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#b8bb26")).Bold(true)
-
-	// Show appropriate content based on panel state
 	if p.loading {
-		spinnerChar := spinnerStyle.Render(p.spinnerFrames[p.spinner])
-		return fmt.Sprintf("%s\n%s",
-			p.packageList.View(),
-			spinnerChar+" Working...")
+		spinner := p.spinnerFrames[p.spinner%len(p.spinnerFrames)]
+		return fmt.Sprintf("%s Loading packages...", spinner)
 	}
 
 	if p.error != "" {
-		return fmt.Sprintf("%s\n%s",
-			p.packageList.View(),
-			ErrorStyle.Render(p.error))
+		return ErrorStyle.Render(p.error)
 	}
 
-	// Show confirmation dialog more compactly
-	if p.showConfirm {
-		return fmt.Sprintf("%s\n%s",
-			p.confirmMessage,
-			"[y]Yes [n]No")
-	}
-
-	// Show action selection mode
-	if p.showActions {
-		return fmt.Sprintf("%s\n%s",
-			p.actionList.View(),
-			"[↵]Select [esc]Cancel")
-	}
-
-	// Show input mode
 	if p.showInput {
-		return fmt.Sprintf("%s\n%s",
+		return fmt.Sprintf(
+			"%s\n\n%s\n\n[Enter] Confirm [Esc] Cancel",
+			p.input.View(),
+			p.statusMessage,
+		)
+	}
+
+	if p.showActions {
+		return p.actionList.View()
+	}
+
+	if p.showConfirm {
+		return fmt.Sprintf(
+			"%s\n\n[Y] Yes [N/Esc] No",
+			p.confirmMessage,
+		)
+	}
+
+	// Check if there are any packages
+	if len(p.packageList.Items()) == 0 {
+		message := "No packages found in package.json\n\n"
+		message += "Press 'i' to install a package\n"
+		message += "Press 'a' to install all dependencies\n"
+		message += "Press 'm' to check for missing dependencies"
+		return message
+	}
+
+	// Show status message if available
+	if time.Since(p.statusTime) < 3*time.Second && p.statusMessage != "" {
+		return fmt.Sprintf(
+			"%s\n\n%s",
 			p.packageList.View(),
-			p.input.View())
+			StatusStyle.Render(p.statusMessage),
+		)
 	}
 
-	// Get the selected package details for status line
-	var statusInfo string
-	if i, ok := p.packageList.SelectedItem().(packageItem); ok {
-		if i.pkg.Type == "devDependency" {
-			statusInfo = "[i]Install [d]Del [dev]"
-		} else {
-			statusInfo = "[i]Install [d]Del"
-		}
-	}
-
-	// Ultra compact view
-	return fmt.Sprintf("%s\n%s",
-		p.packageList.View(),
-		statusInfo)
+	return p.packageList.View()
 }
 
 // Width returns the panel width

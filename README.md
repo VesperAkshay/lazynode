@@ -31,35 +31,39 @@
 
 ---
 
-LazyNode is a feature-rich terminal user interface inspired by Lazygit that helps you manage Node.js projects without having to remember or type npm/npx commands. Boost your productivity with an intuitive, keyboard-driven interface for all your Node.js development needs.
+LazyNode is a feature-rich terminal user interface inspired by Lazygit and LazyNPM that helps you manage Node.js projects without having to remember or type npm/npx commands. Boost your productivity with an intuitive, keyboard-driven interface for all your Node.js development needs.
 
 ![LazyNode Screenshot](docs/screenshot.png)
 
 ## Features
 
 ### 📦 Package Management
-- Install regular and dev dependencies with a few keystrokes
+- Install regular and dev dependencies with dedicated keybindings (`i` and `I`)
 - Uninstall packages with confirmation dialog
 - Check for outdated packages and update them
 - View detailed package information
+- Link and unlink packages with simple keystrokes
 - Manage all dependencies through a visually appealing interface
 
 ### 🧪 Script Management
 - List and run npm scripts interactively
 - Monitor script execution in real-time
 - View script logs with automatic timestamps
+- Stop running scripts with a simple keystroke
 
 ### ⚡ NPX Integration
 - Execute npx commands directly from the UI
 - Access frequently used commands quickly
 - Get suggestions for popular npx tools
+- Save and reuse custom npx commands
 
 ### 🖥️ Modern Terminal UI
 - Side-by-side panel layout for efficient navigation
 - Real-time animations and progress indicators
 - Fully keyboard navigable with intuitive shortcuts
-- Smart navigation between panels (Alt+Up/Down) and within content (Up/Down)
+- Smart navigation between panels with Alt+Arrow keys
 - Context-sensitive command display
+- Advanced fullscreen mode for focused work
 
 ## UI Enhancements
 
@@ -69,23 +73,26 @@ LazyNode features several UI enhancements to provide a rich terminal experience:
 - A carefully crafted terminal color palette with distinct colors for different UI elements
 - Bright accent colors for important actions and status indicators
 - Gradients and color transitions for an elegant look-and-feel
+- Enhanced syntax highlighting for code and command output
 
 ### 🔠 ASCII Art & Text Styling
 - Beautiful ASCII art logo on splash and quit screens
 - Stylized borders, shadows, and panels
 - Rich text formatting with bold, underline, and italic styles
+- Progress indicators with circle notation
 
 ### ⚡ Animations & Visual Effects
 - Dynamic loading animations during operations
 - Smooth fade-in/fade-out transitions between screens
 - Matrix-style particle effects on the splash screen
-- Interactive progress bars and spinners
+- Interactive progress bars and spinners with multi-color gradients
 
 ### 🎭 Terminal Enhancements
 - Terminal-style command prompt in the logs panel
 - Colorized output based on message type (error, warning, success)
 - Styled ASCII borders for terminal-authentic feel
 - Animated input prompts and confirmation dialogs
+- Multi-step loading process visualization
 
 ## Installation
 
@@ -174,7 +181,10 @@ LazyNode uses intuitive keyboard shortcuts for efficient navigation and control:
 | `→` / `l` | Move right (when applicable) |
 | `Alt+↑` / `Alt+k` | Go to previous panel |
 | `Alt+↓` / `Alt+j` | Go to next panel |
+| `Alt+←` / `Alt+h` | Go to left panel |
+| `Alt+→` / `Alt+l` | Go to right panel |
 | `Tab` | Cycle through panels |
+| `Shift+Tab` | Cycle backwards through panels |
 | `1` | Switch to Scripts panel |
 | `2` | Switch to Packages panel |
 | `3` | Switch to Project panel |
@@ -182,25 +192,33 @@ LazyNode uses intuitive keyboard shortcuts for efficient navigation and control:
 | `5` | Switch to Logs panel |
 | `?` | Toggle help screen |
 | `q` | Quit with elegant exit animation |
+| `F` | Toggle fullscreen mode |
 
 ### Package Management (Packages Panel)
 | Key | Action |
 |-----|--------|
-| `a` | Show all package actions |
 | `i` | Install a package |
-| `Shift+i` | Install as dev dependency |
+| `I` | Install as dev dependency |
 | `d` | Uninstall selected package |
 | `o` | Check for outdated packages |
 | `u` | Update selected package |
+| `l` | Link package |
+| `L` | Unlink package |
+| `a` | Install all dependencies |
+| `m` | Check missing dependencies and install them |
+| `x` | Show actions menu |
 | `/` | Search packages |
 | `Enter` | Select/activate package |
+| `Space` | Toggle detailed view |
 | `Esc` | Cancel current action |
 
 ### Script Management (Scripts Panel)
 | Key | Action |
 |-----|--------|
 | `Enter` | Run selected script |
+| `Ctrl+C` | Stop running script |
 | `r` | Reload scripts list |
+| `Space` | View script details |
 
 ### NPX Commands (NPX Panel)
 | Key | Action |
@@ -208,12 +226,16 @@ LazyNode uses intuitive keyboard shortcuts for efficient navigation and control:
 | `n` | Create new NPX command |
 | `Enter` | Run selected NPX command |
 | `Esc` | Cancel current action |
+| `Space` | View command details |
 
-### General Actions
+### Project Actions
 | Key | Action |
 |-----|--------|
-| `r` | Reload/refresh current view |
 | `e` | Edit package.json |
+| `o` | Open in editor |
+| `b` | Build project |
+| `t` | Run tests |
+| `p` | Publish package |
 
 ## Panels Overview
 
@@ -221,18 +243,38 @@ LazyNode's interface is divided into multiple panels, each with a specific purpo
 
 ### 📜 Scripts Panel
 Displays all available npm scripts from your package.json file. Select and run scripts with a single keystroke.
+- View script commands without having to remember them
+- Run and monitor script execution in real-time
+- Get colorized output based on exit status
 
 ### 📦 Packages Panel
 Shows all dependencies (regular and development) installed in your project. Install, update, and remove packages with ease.
+- Visual indicators for outdated packages
+- Quick access to version information
+- Fast actions for common operations
+- Link and unlink functionality
+- Smart confirmation dialogs for destructive actions
 
 ### 🔍 Project Panel
 Provides an overview of your project, including package.json details, Node.js version, and environment information.
+- View project metadata at a glance
+- Quick access to important project properties
+- Environment variable management
+- Project health indicators and statistics
 
 ### ⚡ NPX Panel
 Execute NPX commands without leaving the terminal UI. Includes history and suggestions for popular commands.
+- Smart command history
+- Popular command suggestions
+- Custom command creation
+- Real-time execution feedback
 
 ### 🖥️ Terminal Panel
 Displays real-time output from running scripts, package operations, and system messages with color-coded formatting.
+- ANSI color support
+- Command timestamping
+- Scrollable history
+- Automatic error highlighting
 
 ## Special Screens
 
@@ -240,6 +282,8 @@ Displays real-time output from running scripts, package operations, and system m
 An animated ASCII art welcome screen that appears when LazyNode starts up.
 - Features a dynamic progress bar with stage indicators
 - Matrix-style falling characters animation
+- Gradient color logo effect
+- Multi-step loading process visualization
 - Smooth transition to the main interface
 
 ### 👋 Quit Screen
@@ -247,60 +291,52 @@ A farewell animation when you exit LazyNode.
 - Fade-in/fade-out effect with thank you message
 - Randomized farewell messages
 - Gradient color effects
+- Particle animation effects
 
 ## Development
 
-LazyNode is built with Go and uses the following libraries:
-
-- [Bubble Tea](https://github.com/charmbracelet/bubbletea): Terminal UI framework
-- [Lip Gloss](https://github.com/charmbracelet/lipgloss): Style definitions
-- [Bubbles](https://github.com/charmbracelet/bubbles): UI components
-
-To set up the development environment:
+### Building from Source
 
 ```bash
+# Clone the repository
+git clone https://github.com/VesperAkshay/lazynode.git
+cd lazynode
+
 # Install dependencies
 go mod download
 
-# Run the application
-go run cmd/lazynode/main.go
+# Build the binary
+go build -o lazynode cmd/lazynode/main.go
 
-# Build for your platform
-make build
-
-# Build for all platforms
-make cross-build
+# Run tests
+go test ./...
 ```
 
-## Customization
+### Project Structure
 
-LazyNode supports customization of its appearance and behavior:
+- `cmd/` - Main application entry point
+- `pkg/` - Library code organized by domain
+  - `ui/` - Terminal UI components
+  - `npm/` - npm package management
+  - `npx/` - npx command execution
+  - `scripts/` - Script management
+  - `project/` - Project configuration
+  - `version/` - Version information
 
-### Color Themes
-Colors are defined in the `pkg/ui/panels.go` file. Modify the terminal color variables to create your own theme.
-
-### ASCII Art
-The ASCII art for splash and quit screens can be found in `pkg/ui/splash.go` and `pkg/ui/quit.go`. Feel free to customize them to your liking.
-
-### Key Bindings
-Key bindings are defined in `pkg/ui/model.go`. You can modify them to match your preferences.
-
-## Contributing
+### Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
+1. Fork the project
+2. Create your feature branch: `git checkout -b feature/amazing-feature`
+3. Commit your changes: `git commit -m 'Add some amazing feature'`
+4. Push to the branch: `git push origin feature/amazing-feature`
 5. Open a Pull Request
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Acknowledgments
+---
 
-- Inspired by [Lazygit](https://github.com/jesseduffield/lazygit)
-- Built with [Bubble Tea](https://github.com/charmbracelet/bubbletea)
-- Thanks to all contributors and the Node.js community! 
+<p align="center">Made with ❤️ by <a href="https://github.com/VesperAkshay">VesperAkshay</a></p> 

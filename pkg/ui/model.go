@@ -17,26 +17,70 @@ import (
 
 // KeyMap defines the keybindings for the application
 type KeyMap struct {
-	Up          key.Binding
-	Down        key.Binding
-	Left        key.Binding
-	Right       key.Binding
-	PanelUp     key.Binding
-	PanelDown   key.Binding
-	Enter       key.Binding
-	Install     key.Binding
-	Delete      key.Binding
-	Outdated    key.Binding
-	Update      key.Binding
-	Reload      key.Binding
-	Edit        key.Binding
+	// Navigation Keys
+	Up         key.Binding
+	Down       key.Binding
+	Left       key.Binding
+	Right      key.Binding
+	PanelUp    key.Binding
+	PanelDown  key.Binding
+	PanelLeft  key.Binding
+	PanelRight key.Binding
+	NextTab    key.Binding
+	PrevTab    key.Binding
+
+	// Selection and Action Keys
+	Enter  key.Binding
+	Back   key.Binding
+	Escape key.Binding
+
+	// Tab Selection Keys
 	TabScripts  key.Binding
 	TabPackages key.Binding
 	TabProject  key.Binding
 	TabNpx      key.Binding
 	TabLogs     key.Binding
-	Quit        key.Binding
-	Help        key.Binding
+
+	// Package Management
+	Install      key.Binding
+	InstallDev   key.Binding
+	Delete       key.Binding
+	Outdated     key.Binding
+	Update       key.Binding
+	Link         key.Binding
+	UnLink       key.Binding
+	Search       key.Binding
+	InstallAll   key.Binding
+	CheckMissing key.Binding
+
+	// Script Management
+	RunScript  key.Binding
+	StopScript key.Binding
+
+	// NPX Management
+	NewNpx key.Binding
+	RunNpx key.Binding
+
+	// General Actions
+	Reload  key.Binding
+	Edit    key.Binding
+	Open    key.Binding
+	Build   key.Binding
+	Test    key.Binding
+	Publish key.Binding
+
+	// UI Controls
+	Help         key.Binding
+	Quit         key.Binding
+	ToggleDetail key.Binding
+	FullScreen   key.Binding
+	ActionMenu   key.Binding
+
+	// Search Controls
+	SearchUp     key.Binding
+	SearchDown   key.Binding
+	SearchInput  key.Binding
+	SearchCancel key.Binding
 }
 
 // ShortHelp returns keybindings to be shown in the mini help view.
@@ -49,17 +93,25 @@ func (k KeyMap) ShortHelp() []key.Binding {
 // This is part of the help.KeyMap interface.
 func (k KeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k.Up, k.Down, k.Left, k.Right, k.PanelUp, k.PanelDown},
+		// Navigation
+		{k.Up, k.Down, k.Left, k.Right, k.PanelUp, k.PanelDown, k.PanelLeft, k.PanelRight},
+		// Tab selection
 		{k.TabScripts, k.TabPackages, k.TabProject, k.TabNpx, k.TabLogs},
-		{k.Install, k.Delete, k.Outdated, k.Update},
-		{k.Enter, k.Reload, k.Edit},
-		{k.Help, k.Quit},
+		// Package management
+		{k.Install, k.InstallDev, k.Delete, k.Outdated, k.Update, k.Link, k.UnLink, k.Search, k.InstallAll, k.CheckMissing},
+		// Script and NPX management
+		{k.RunScript, k.StopScript, k.NewNpx, k.RunNpx},
+		// General actions
+		{k.Enter, k.Reload, k.Edit, k.Open, k.Build, k.Test, k.Publish},
+		// UI controls
+		{k.Help, k.Quit, k.ToggleDetail, k.FullScreen, k.ActionMenu},
 	}
 }
 
 // DefaultKeyMap returns the default keybindings
 func DefaultKeyMap() KeyMap {
 	return KeyMap{
+		// Navigation Keys
 		Up: key.NewBinding(
 			key.WithKeys("up", "k"),
 			key.WithHelp("↑/k", "up"),
@@ -84,34 +136,38 @@ func DefaultKeyMap() KeyMap {
 			key.WithKeys("alt+down", "alt+j"),
 			key.WithHelp("alt+↓", "next panel"),
 		),
+		PanelLeft: key.NewBinding(
+			key.WithKeys("alt+left", "alt+h"),
+			key.WithHelp("alt+←", "left panel"),
+		),
+		PanelRight: key.NewBinding(
+			key.WithKeys("alt+right", "alt+l"),
+			key.WithHelp("alt+→", "right panel"),
+		),
+		NextTab: key.NewBinding(
+			key.WithKeys("tab"),
+			key.WithHelp("tab", "next tab"),
+		),
+		PrevTab: key.NewBinding(
+			key.WithKeys("shift+tab"),
+			key.WithHelp("shift+tab", "previous tab"),
+		),
+
+		// Selection and Action Keys
 		Enter: key.NewBinding(
 			key.WithKeys("enter"),
 			key.WithHelp("enter", "select/run"),
 		),
-		Install: key.NewBinding(
-			key.WithKeys("i"),
-			key.WithHelp("i", "install package"),
+		Back: key.NewBinding(
+			key.WithKeys("backspace"),
+			key.WithHelp("backspace", "go back"),
 		),
-		Delete: key.NewBinding(
-			key.WithKeys("d"),
-			key.WithHelp("d", "delete package"),
+		Escape: key.NewBinding(
+			key.WithKeys("esc"),
+			key.WithHelp("esc", "cancel"),
 		),
-		Outdated: key.NewBinding(
-			key.WithKeys("o"),
-			key.WithHelp("o", "check outdated"),
-		),
-		Update: key.NewBinding(
-			key.WithKeys("u"),
-			key.WithHelp("u", "update package"),
-		),
-		Reload: key.NewBinding(
-			key.WithKeys("r"),
-			key.WithHelp("r", "reload UI"),
-		),
-		Edit: key.NewBinding(
-			key.WithKeys("e"),
-			key.WithHelp("e", "edit package.json"),
-		),
+
+		// Tab Selection Keys
 		TabScripts: key.NewBinding(
 			key.WithKeys("1"),
 			key.WithHelp("1", "scripts panel"),
@@ -132,6 +188,96 @@ func DefaultKeyMap() KeyMap {
 			key.WithKeys("5"),
 			key.WithHelp("5", "logs panel"),
 		),
+
+		// Package Management
+		Install: key.NewBinding(
+			key.WithKeys("i"),
+			key.WithHelp("i", "install package"),
+		),
+		InstallDev: key.NewBinding(
+			key.WithKeys("I"),
+			key.WithHelp("I", "install dev package"),
+		),
+		Delete: key.NewBinding(
+			key.WithKeys("d"),
+			key.WithHelp("d", "delete package"),
+		),
+		Outdated: key.NewBinding(
+			key.WithKeys("o"),
+			key.WithHelp("o", "check outdated"),
+		),
+		Update: key.NewBinding(
+			key.WithKeys("u"),
+			key.WithHelp("u", "update package"),
+		),
+		Link: key.NewBinding(
+			key.WithKeys("l"),
+			key.WithHelp("l", "link package"),
+		),
+		UnLink: key.NewBinding(
+			key.WithKeys("L"),
+			key.WithHelp("L", "unlink package"),
+		),
+		Search: key.NewBinding(
+			key.WithKeys("/"),
+			key.WithHelp("/", "search"),
+		),
+		InstallAll: key.NewBinding(
+			key.WithKeys("a"),
+			key.WithHelp("a", "install all dependencies"),
+		),
+		CheckMissing: key.NewBinding(
+			key.WithKeys("m"),
+			key.WithHelp("m", "check missing dependencies"),
+		),
+
+		// Script Management
+		RunScript: key.NewBinding(
+			key.WithKeys("enter"),
+			key.WithHelp("enter", "run script"),
+		),
+		StopScript: key.NewBinding(
+			key.WithKeys("ctrl+c"),
+			key.WithHelp("ctrl+c", "stop script"),
+		),
+
+		// NPX Management
+		NewNpx: key.NewBinding(
+			key.WithKeys("n"),
+			key.WithHelp("n", "new npx command"),
+		),
+		RunNpx: key.NewBinding(
+			key.WithKeys("enter"),
+			key.WithHelp("enter", "run npx command"),
+		),
+
+		// General Actions
+		Reload: key.NewBinding(
+			key.WithKeys("r"),
+			key.WithHelp("r", "reload UI"),
+		),
+		Edit: key.NewBinding(
+			key.WithKeys("e"),
+			key.WithHelp("e", "edit package.json"),
+		),
+		Open: key.NewBinding(
+			key.WithKeys("o"),
+			key.WithHelp("o", "open in editor"),
+		),
+		Build: key.NewBinding(
+			key.WithKeys("b"),
+			key.WithHelp("b", "build"),
+		),
+		Test: key.NewBinding(
+			key.WithKeys("t"),
+			key.WithHelp("t", "test"),
+		),
+		Publish: key.NewBinding(
+			key.WithKeys("p"),
+			key.WithHelp("p", "publish"),
+		),
+
+		// UI Controls
 		Quit: key.NewBinding(
 			key.WithKeys("q", "ctrl+c"),
 			key.WithHelp("q", "quit"),
@@ -139,6 +285,36 @@ func DefaultKeyMap() KeyMap {
 		Help: key.NewBinding(
 			key.WithKeys("?"),
 			key.WithHelp("?", "toggle help"),
+		),
+		ToggleDetail: key.NewBinding(
+			key.WithKeys("space"),
+			key.WithHelp("space", "toggle details"),
+		),
+		FullScreen: key.NewBinding(
+			key.WithKeys("F"),
+			key.WithHelp("F", "toggle fullscreen"),
+		),
+		ActionMenu: key.NewBinding(
+			key.WithKeys("x"),
+			key.WithHelp("x", "open action menu"),
+		),
+
+		// Search Controls
+		SearchUp: key.NewBinding(
+			key.WithKeys("ctrl+p"),
+			key.WithHelp("ctrl+p", "search up"),
+		),
+		SearchDown: key.NewBinding(
+			key.WithKeys("ctrl+n"),
+			key.WithHelp("ctrl+n", "search down"),
+		),
+		SearchInput: key.NewBinding(
+			key.WithKeys("/"),
+			key.WithHelp("/", "search"),
+		),
+		SearchCancel: key.NewBinding(
+			key.WithKeys("esc"),
+			key.WithHelp("esc", "cancel search"),
 		),
 	}
 }
@@ -167,6 +343,8 @@ type Model struct {
 	// Quit screen related fields
 	showQuit   bool
 	quitScreen QuitModel
+	// Message queue for background operations
+	msgChan chan tea.Msg
 }
 
 // NewModel initializes a new model with default values
@@ -188,6 +366,7 @@ func NewModel() Model {
 		splashScreen: splashScreen,
 		showQuit:     false,
 		quitScreen:   quitScreen,
+		msgChan:      make(chan tea.Msg, 10), // Buffer for background messages
 	}
 }
 
@@ -198,35 +377,63 @@ func (m Model) Init() tea.Cmd {
 		m.splashScreen.Init(),
 		m.detectProject,
 		m.startTicker(),
+		m.listenForBackgroundMsgs,
 	)
+}
+
+// listenForBackgroundMsgs listens for messages from background goroutines
+func (m Model) listenForBackgroundMsgs() tea.Msg {
+	return <-m.msgChan
+}
+
+// Load packages in the background to avoid blocking the UI
+func (m *Model) loadPackagesAsync() tea.Cmd {
+	return func() tea.Msg {
+		// Load packages (optimized for speed)
+		err := m.packageMgr.LoadPackages()
+		if err != nil {
+			m.logs.AddLog(fmt.Sprintf("Warning: Failed to load packages: %v", err))
+		}
+
+		// Create packages panel now that data is loaded
+		packagesPanel := NewPackagesPanel(m.packageMgr)
+
+		return packageLoadedMsg{
+			panel: packagesPanel,
+			count: len(m.packageMgr.Packages),
+		}
+	}
 }
 
 // detectProject is a command that tries to find a package.json file
 func (m Model) detectProject() tea.Msg {
+	// Display loading message immediately
+	m.ready = false
+
 	packageJSONPath, err := project.Detect()
 	if err != nil {
 		return errorMsg(fmt.Sprintf("Could not find a package.json file: %v", err))
 	}
 
-	// Initialize the project
+	// Initialize the project (fast operation)
 	proj, err := project.NewProject(packageJSONPath)
 	if err != nil {
 		return errorMsg(fmt.Sprintf("Error loading project: %v", err))
 	}
 
-	// Initialize package manager
+	// Initialize package manager (fast initial setup)
 	pkgMgr, err := npm.NewPackageManager(packageJSONPath)
 	if err != nil {
 		return errorMsg(fmt.Sprintf("Error initializing package manager: %v", err))
 	}
 
-	// Initialize script runner
+	// Initialize script runner (fast operation)
 	scriptRunner, err := scripts.NewScriptRunner(packageJSONPath)
 	if err != nil {
 		return errorMsg(fmt.Sprintf("Error initializing script runner: %v", err))
 	}
 
-	// Initialize npx runner
+	// Initialize npx runner (fast operation)
 	npxRunner, err := npx.NewRunner(filepath.Dir(packageJSONPath))
 	if err != nil {
 		return errorMsg(fmt.Sprintf("Error initializing npx runner: %v", err))
@@ -321,8 +528,28 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Reserve space for top and bottom bars
 			availableHeight := termHeight - 2
 
-			// Calculate panel dimensions - 4 equal panels in a grid (2x2)
-			topRowHeight := availableHeight * 4 / 5
+			// Improved panel layout - 3-column grid with logs at bottom
+			// Left side: Scripts (top) and Project (bottom)
+			// Middle: Packages
+			// Right: NPX
+			leftColumnWidth := termWidth * 25 / 100                                 // 25% of width
+			rightColumnWidth := termWidth * 25 / 100                                // 25% of width
+			middleColumnWidth := termWidth - leftColumnWidth - rightColumnWidth - 2 // Remaining space (minus gaps)
+
+			// Make sure no column is too narrow
+			minColumnWidth := 25
+			if leftColumnWidth < minColumnWidth {
+				leftColumnWidth = minColumnWidth
+			}
+			if rightColumnWidth < minColumnWidth {
+				rightColumnWidth = minColumnWidth
+			}
+			if middleColumnWidth < minColumnWidth {
+				middleColumnWidth = minColumnWidth
+			}
+
+			// Height calculation - top panels take 3/4 of available space
+			topRowHeight := availableHeight * 3 / 4
 			if topRowHeight < 8 {
 				topRowHeight = 8
 			}
@@ -332,24 +559,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				bottomRowHeight = 3
 			}
 
-			// Calculate panel widths - divide available width into 2 columns
-			columnWidth := termWidth/2 - 1 // -1 for gap between columns
-			if columnWidth < 35 {
-				columnWidth = 35
-			}
-
-			// Ensure we don't exceed available width
-			if columnWidth*2+1 > termWidth {
-				columnWidth = (termWidth - 1) / 2
-			}
+			// Individual panel heights
+			scriptsPanelHeight := topRowHeight / 2
+			projectPanelHeight := topRowHeight - scriptsPanelHeight - 1 // -1 for gap
 
 			// Update all panel sizes based on their position in the layout
 			for name, panel := range m.panels {
-				if name == "logs" {
+				switch name {
+				case "logs":
 					panel.SetSize(termWidth-2, bottomRowHeight-2)
-				} else {
-					// All other panels get equal size in the grid
-					panel.SetSize(columnWidth-2, topRowHeight/2-2)
+				case "scripts":
+					panel.SetSize(leftColumnWidth-2, scriptsPanelHeight-2)
+				case "project":
+					panel.SetSize(leftColumnWidth-2, projectPanelHeight-2)
+				case "packages":
+					panel.SetSize(middleColumnWidth-2, topRowHeight-2)
+				case "npx":
+					panel.SetSize(rightColumnWidth-2, topRowHeight-2)
 				}
 			}
 
@@ -435,29 +661,62 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch {
 			case key.Matches(msg, m.keys.PanelUp):
 				// Navigate panels up
-				panels := []string{"scripts", "packages", "project", "npx", "logs"}
-				for i, panel := range panels {
-					if panel == m.activeTab {
-						// Move to the previous panel
-						prevIndex := i - 1
-						if prevIndex < 0 {
-							prevIndex = len(panels) - 1
-						}
-						m.activeTab = panels[prevIndex]
-						break
+				switch m.activeTab {
+				case "project":
+					m.activeTab = "scripts"
+				case "packages":
+					m.activeTab = "scripts"
+				case "npx":
+					m.activeTab = "scripts"
+				case "logs":
+					if m.panels["npx"] != nil {
+						m.activeTab = "npx"
+					} else if m.panels["packages"] != nil {
+						m.activeTab = "packages"
+					} else {
+						m.activeTab = "project"
 					}
 				}
 				return m, nil
 
 			case key.Matches(msg, m.keys.PanelDown):
 				// Navigate panels down
-				panels := []string{"scripts", "packages", "project", "npx", "logs"}
-				for i, panel := range panels {
-					if panel == m.activeTab {
-						// Move to the next panel
-						nextIndex := (i + 1) % len(panels)
-						m.activeTab = panels[nextIndex]
-						break
+				switch m.activeTab {
+				case "scripts":
+					m.activeTab = "project"
+				case "project":
+					m.activeTab = "logs"
+				case "packages":
+					m.activeTab = "logs"
+				case "npx":
+					m.activeTab = "logs"
+				}
+				return m, nil
+
+			case key.Matches(msg, m.keys.PanelLeft):
+				// Navigate panels left
+				switch m.activeTab {
+				case "packages":
+					if m.panels["project"] != nil {
+						m.activeTab = "project"
+					} else {
+						m.activeTab = "scripts"
+					}
+				case "npx":
+					m.activeTab = "packages"
+				case "logs":
+					m.activeTab = "project"
+				}
+				return m, nil
+
+			case key.Matches(msg, m.keys.PanelRight):
+				// Navigate panels right
+				switch m.activeTab {
+				case "scripts", "project":
+					m.activeTab = "packages"
+				case "packages":
+					if m.panels["npx"] != nil {
+						m.activeTab = "npx"
 					}
 				}
 				return m, nil
@@ -488,36 +747,44 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Create logs panel first
 		m.logs = NewLogsPanel()
 
-		// Create panels
+		// Create scripts panel (fast operation)
 		scriptsPanel := NewScriptsPanel(m.scriptRunner)
 		scriptsPanel.SetLogsPanel(m.logs)
 		m.panels["scripts"] = scriptsPanel
 
-		// Ensure packages are loaded before creating the package panel
-		if err := m.packageMgr.LoadPackages(); err != nil {
-			m.logs.AddLog(fmt.Sprintf("Warning: Failed to load packages: %v", err))
-		}
-
-		m.panels["packages"] = NewPackagesPanel(m.packageMgr)
+		// Create project panel (fast operation)
 		m.panels["project"] = NewProjectPanel(m.project)
+
+		// Create NPX panel (fast operation)
 		m.panels["npx"] = NewNpxPanel(m.npxRunner, m.logs)
+
+		// Create logs panel (fast operation)
 		m.panels["logs"] = m.logs
 
-		// Initialize panel sizes
-		contentWidth := m.width - 6
-		contentHeight := m.height - 8
-
-		for _, panel := range m.panels {
-			panel.SetSize(contentWidth, contentHeight)
-		}
-
+		// Make UI ready immediately to show the interface
 		m.ready = true
 
 		// Add welcome message to logs
 		m.logs.AddLog(fmt.Sprintf("Welcome to LazyNode v1.0 - Managing project: %s", m.project.Name))
-		m.logs.AddLog(fmt.Sprintf("Found %d packages in package.json", len(m.packageMgr.Packages)))
+		m.logs.AddLog("Loading packages...")
+
+		// Initialize panel sizes
+		m.updatePanelSizes()
+
+		// Load packages asynchronously
+		return m, m.loadPackagesAsync()
+
+	case packageLoadedMsg:
+		// Update the UI with the loaded package panel
+		m.panels["packages"] = msg.panel
+		m.logs.AddLog(fmt.Sprintf("Found %d packages in package.json", msg.count))
 		m.logs.AddLog("Use tabs 1-5 to navigate between panels")
 		m.logs.AddLog("Press ? for help")
+
+		// Make sure panel sizes are updated
+		m.updatePanelSizes()
+
+		return m, nil
 
 	case tickMsg:
 		// Real-time updates
@@ -592,29 +859,200 @@ func (m Model) View() string {
 		return m.helpPanel.View()
 	}
 
-	// Define styles for different panels
-	topBarStyle := lipgloss.NewStyle().
+	// Get actual terminal dimensions
+	termWidth := m.width
+	termHeight := m.height
+
+	// Ensure minimum dimensions
+	if termWidth < 80 {
+		termWidth = 80
+	}
+	if termHeight < 24 {
+		termHeight = 24
+	}
+
+	// Reserve space for top and bottom bars
+	availableHeight := termHeight - 2
+
+	// Improved panel layout - 3-column grid with logs at bottom
+	// Left side: Scripts (top) and Project (bottom)
+	// Middle: Packages
+	// Right: NPX
+	leftColumnWidth := termWidth * 25 / 100                                 // 25% of width
+	rightColumnWidth := termWidth * 25 / 100                                // 25% of width
+	middleColumnWidth := termWidth - leftColumnWidth - rightColumnWidth - 2 // Remaining space (minus gaps)
+
+	// Make sure no column is too narrow
+	minColumnWidth := 25
+	if leftColumnWidth < minColumnWidth {
+		leftColumnWidth = minColumnWidth
+	}
+	if rightColumnWidth < minColumnWidth {
+		rightColumnWidth = minColumnWidth
+	}
+	if middleColumnWidth < minColumnWidth {
+		middleColumnWidth = minColumnWidth
+	}
+
+	// Height calculation - top panels take 3/4 of available space
+	topRowHeight := availableHeight * 3 / 4
+	if topRowHeight < 8 {
+		topRowHeight = 8
+	}
+
+	bottomRowHeight := availableHeight - topRowHeight - 1 // -1 for gap
+	if bottomRowHeight < 3 {
+		bottomRowHeight = 3
+	}
+
+	// Individual panel heights
+	scriptsPanelHeight := topRowHeight / 2
+	projectPanelHeight := topRowHeight - scriptsPanelHeight - 1 // -1 for gap
+
+	// Top status bar
+	statusBar := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(lipgloss.Color("#ebdbb2")).
 		Background(lipgloss.Color("#3c3836")).
-		Padding(0, 1)
+		Padding(0, 1).
+		Width(termWidth).
+		Render(fmt.Sprintf("LazyNode - %s", m.project.Name))
 
-	statusStyle := topBarStyle.Copy()
-
-	// Panel style similar to Lazygit
+	// Panel style with rounded borders for a modern look
 	panelStyle := lipgloss.NewStyle().
 		BorderStyle(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("#4d4d4d")).
 		Padding(0, 0).
 		Margin(0, 0)
 
+	// Style for active panel with distinct color
 	selectedPanelStyle := panelStyle.Copy().
 		BorderForeground(lipgloss.Color("#b8bb26"))
 
+	// Style for panel titles with a pop of color
 	titleStyle := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(lipgloss.Color("#fabd2f")).
 		Padding(0, 1)
+
+	// Loading style for panels still loading
+	loadingStyle := panelStyle.Copy().
+		BorderForeground(lipgloss.Color("#83a598"))
+
+	// Prepare all panels
+	panelContents := make(map[string]string)
+	panelTitles := make(map[string]string)
+
+	// Set panel sizes and get content
+	for name, panel := range m.panels {
+		switch name {
+		case "logs":
+			panel.SetSize(termWidth-2, bottomRowHeight-2)
+		case "scripts":
+			panel.SetSize(leftColumnWidth-2, scriptsPanelHeight-2)
+		case "project":
+			panel.SetSize(leftColumnWidth-2, projectPanelHeight-2)
+		case "packages":
+			panel.SetSize(middleColumnWidth-2, topRowHeight-2)
+		case "npx":
+			panel.SetSize(rightColumnWidth-2, topRowHeight-2)
+		}
+
+		// Get panel content and title
+		panelContents[name] = panel.View()
+		panelTitles[name] = panel.Title()
+	}
+
+	// Render panel with proper styling and highlighting active panel
+	renderPanel := func(name string, width, height int) string {
+		if _, exists := m.panels[name]; exists {
+			content := fmt.Sprintf("%s\n%s",
+				titleStyle.Render(panelTitles[name]),
+				panelContents[name])
+
+			style := panelStyle
+			if name == m.activeTab {
+				style = selectedPanelStyle
+			}
+
+			return style.
+				Width(width).
+				Height(height).
+				Render(content)
+		} else if name == "packages" {
+			// Special case for packages panel if it's not loaded yet
+			content := fmt.Sprintf("%s\n%s",
+				titleStyle.Render("Packages"),
+				"Loading packages...")
+
+			return loadingStyle.
+				Width(width).
+				Height(height).
+				Render(content)
+		}
+
+		// Fallback for other missing panels
+		return panelStyle.
+			Width(width).
+			Height(height).
+			Render("Loading...")
+	}
+
+	// Render all panels with their new dimensions
+	scriptsRendered := renderPanel("scripts", leftColumnWidth, scriptsPanelHeight)
+	projectRendered := renderPanel("project", leftColumnWidth, projectPanelHeight)
+	packagesRendered := renderPanel("packages", middleColumnWidth, topRowHeight)
+	npxRendered := renderPanel("npx", rightColumnWidth, topRowHeight)
+	logsRendered := renderPanel("logs", termWidth, bottomRowHeight)
+
+	// Layout the panels - left column stacked vertically
+	leftColumn := lipgloss.JoinVertical(lipgloss.Left, scriptsRendered, projectRendered)
+
+	// Arrange the top row with the 3 columns
+	topRow := lipgloss.JoinHorizontal(lipgloss.Top, leftColumn, packagesRendered, npxRendered)
+
+	// Enhanced help bar with more details on available shortcuts
+	helpText := "[q]Quit [?]Help [Tab]Switch panels [1-5]Select panel [↵]Select"
+	if m.activeTab == "scripts" {
+		helpText += " | [r]Run script"
+	} else if m.activeTab == "packages" {
+		helpText += " | [i]Install [d]Delete [u]Update [b]Build [t]Test [p]Publish [e]Edit"
+	}
+
+	helpBar := lipgloss.NewStyle().
+		Background(lipgloss.Color("#3c3836")).
+		Foreground(lipgloss.Color("#ebdbb2")).
+		Padding(0, 1).
+		Width(termWidth).
+		Render(helpText)
+
+	// Complete layout
+	ui := lipgloss.JoinVertical(
+		lipgloss.Left,
+		statusBar,
+		topRow,
+		logsRendered,
+		helpBar,
+	)
+
+	// Final trim to ensure we don't exceed terminal dimensions
+	return lipgloss.NewStyle().
+		MaxWidth(termWidth).
+		MaxHeight(termHeight).
+		Render(ui)
+}
+
+// packageLoadedMsg is sent when packages have been loaded
+type packageLoadedMsg struct {
+	panel *PackagesPanel
+	count int
+}
+
+// updatePanelSizes updates the sizes of all panels
+func (m *Model) updatePanelSizes() {
+	if !m.ready {
+		return
+	}
 
 	// Get actual terminal dimensions
 	termWidth := m.width
@@ -631,100 +1069,59 @@ func (m Model) View() string {
 	// Reserve space for top and bottom bars
 	availableHeight := termHeight - 2
 
-	// Calculate panel dimensions - 4 equal panels in a grid (2x2)
-	topRowHeight := availableHeight * 4 / 5
+	// Improved panel layout calculations
+	leftColumnWidth := termWidth * 25 / 100
+	rightColumnWidth := termWidth * 25 / 100
+	middleColumnWidth := termWidth - leftColumnWidth - rightColumnWidth - 2
+
+	// Make sure no column is too narrow
+	minColumnWidth := 25
+	if leftColumnWidth < minColumnWidth {
+		leftColumnWidth = minColumnWidth
+	}
+	if rightColumnWidth < minColumnWidth {
+		rightColumnWidth = minColumnWidth
+	}
+	if middleColumnWidth < minColumnWidth {
+		middleColumnWidth = minColumnWidth
+	}
+
+	// Height calculation
+	topRowHeight := availableHeight * 3 / 4
 	if topRowHeight < 8 {
 		topRowHeight = 8
 	}
 
-	bottomRowHeight := availableHeight - topRowHeight - 1 // -1 for gap
+	bottomRowHeight := availableHeight - topRowHeight - 1
 	if bottomRowHeight < 3 {
 		bottomRowHeight = 3
 	}
 
-	// Calculate panel widths - divide available width into 2 columns
-	columnWidth := termWidth/2 - 1 // -1 for gap between columns
-	if columnWidth < 35 {
-		columnWidth = 35
-	}
+	// Individual panel heights
+	scriptsPanelHeight := topRowHeight / 2
+	projectPanelHeight := topRowHeight - scriptsPanelHeight - 1
 
-	// Ensure we don't exceed available width
-	if columnWidth*2+1 > termWidth {
-		columnWidth = (termWidth - 1) / 2
-	}
-
-	// Top status bar
-	statusBar := topBarStyle.Width(termWidth).
-		Render(fmt.Sprintf("LazyNode - %s", m.project.Name))
-
-	// Prepare all panels
-	panelContents := make(map[string]string)
-	panelTitles := make(map[string]string)
-
-	// Set panel sizes and get content
+	// Update all panel sizes based on their position in the layout
 	for name, panel := range m.panels {
-		if name == "logs" {
+		switch name {
+		case "logs":
 			panel.SetSize(termWidth-2, bottomRowHeight-2)
-		} else {
-			// All other panels get equal size in the grid
-			panel.SetSize(columnWidth-2, topRowHeight/2-2)
+		case "scripts":
+			panel.SetSize(leftColumnWidth-2, scriptsPanelHeight-2)
+		case "project":
+			panel.SetSize(leftColumnWidth-2, projectPanelHeight-2)
+		case "packages":
+			panel.SetSize(middleColumnWidth-2, topRowHeight-2)
+		case "npx":
+			panel.SetSize(rightColumnWidth-2, topRowHeight-2)
 		}
-
-		// Get panel content and title
-		panelContents[name] = panel.View()
-		panelTitles[name] = panel.Title()
 	}
 
-	// Render panel with proper styling and highlighting active panel
-	renderPanel := func(name string, width, height int) string {
-		content := fmt.Sprintf("%s\n%s",
-			titleStyle.Render(panelTitles[name]),
-			panelContents[name])
-
-		style := panelStyle
-		if name == m.activeTab {
-			style = selectedPanelStyle
-		}
-
-		return style.
-			Width(width).
-			Height(height).
-			Render(content)
+	// Update help panel size
+	if m.helpPanel != nil {
+		m.helpPanel.SetSize(termWidth, termHeight)
 	}
 
-	// Render all panels
-	topLeftRendered := renderPanel("scripts", columnWidth, topRowHeight/2)
-	topRightRendered := renderPanel("packages", columnWidth, topRowHeight/2)
-	bottomLeftRendered := renderPanel("project", columnWidth, topRowHeight/2)
-	bottomRightRendered := renderPanel("npx", columnWidth, topRowHeight/2)
-	logsRendered := renderPanel("logs", termWidth, bottomRowHeight)
-
-	// Layout the panels
-	topLeftRow := lipgloss.JoinHorizontal(lipgloss.Top, topLeftRendered, topRightRendered)
-	bottomLeftRow := lipgloss.JoinHorizontal(lipgloss.Top, bottomLeftRendered, bottomRightRendered)
-	topGrid := lipgloss.JoinVertical(lipgloss.Left, topLeftRow, bottomLeftRow)
-
-	// Help bar at the bottom
-	helpText := "[q]Quit [?]Help [Tab]Switch panels [1-5]Select panel [↵]Select"
-	if m.activeTab == "scripts" {
-		helpText += " | [r]Run script"
-	} else if m.activeTab == "packages" {
-		helpText += " | [i]Install [d]Delete [u]Update"
-	}
-	helpBar := statusStyle.Width(termWidth).Render(helpText)
-
-	// Complete layout
-	ui := lipgloss.JoinVertical(
-		lipgloss.Left,
-		statusBar,
-		topGrid,
-		logsRendered,
-		helpBar,
-	)
-
-	// Final trim to ensure we don't exceed terminal dimensions
-	return lipgloss.NewStyle().
-		MaxWidth(termWidth).
-		MaxHeight(termHeight).
-		Render(ui)
+	// Update help model width
+	m.help.Width = termWidth
 }

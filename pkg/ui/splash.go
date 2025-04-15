@@ -179,7 +179,7 @@ func (m SplashModel) Update(msg tea.Msg) (SplashModel, tea.Cmd) {
 }
 
 // renderParticles draws the matrix-like effect in the background
-func (m SplashModel) renderParticles() []string {
+func (m SplashModel) renderParticles() {
 	// Create a grid for the particles
 	grid := make([][]string, m.height)
 	for y := range grid {
@@ -205,111 +205,150 @@ func (m SplashModel) renderParticles() []string {
 		rows[y] = strings.Join(row, "")
 	}
 
-	return rows
+	// Update the particles state
+	m.particles = m.particles[:0]
+	for _, row := range rows {
+		for _, char := range row {
+			if char != ' ' {
+				m.particles = append(m.particles, Particle{
+					x:    float64(len(row) / 2),
+					y:    float64(len(rows) / 2),
+					vx:   0,
+					vy:   0,
+					char: string(char),
+					color: lipgloss.Color(fmt.Sprintf("#%02x%02x%02x",
+						100+rand.Intn(155),
+						180+rand.Intn(75),
+						80+rand.Intn(100))),
+					lifespan: 20 + rand.Intn(60),
+				})
+			}
+		}
+	}
 }
 
 // View renders the splash screen
 func (m SplashModel) View() string {
-	if m.width == 0 {
-		return "Loading..."
+	if m.width < 20 || m.height < 10 {
+		return "Loading LazyNode..."
 	}
 
-	// Get background particles if there's enough space
-	background := ""
-	if m.width >= 80 && m.height >= 20 {
-		particleRows := m.renderParticles()
-		background = strings.Join(particleRows, "\n")
+	// Call renderParticles but don't use the return value for now
+	// This still updates the state of particles
+	m.renderParticles()
+
+	// Style the ASCII art logo with gradient colors
+	var logoLines []string
+	asciiLines := strings.Split(strings.TrimSpace(asciiLogo), "\n")
+
+	// Create a gradient effect for the logo
+	for i, line := range asciiLines {
+		// Calculate gradient color based on line number
+		r := 180 + (i*10)%75
+		g := 100 + (i*15)%155
+		b := 220 + (i*5)%35
+
+		styledLine := lipgloss.NewStyle().
+			Foreground(lipgloss.Color(fmt.Sprintf("#%02x%02x%02x", r, g, b))).
+			Bold(true).
+			Render(line)
+
+		logoLines = append(logoLines, styledLine)
 	}
 
-	// Style the ASCII logo with gradient colors
-	logoLines := strings.Split(asciiLogo, "\n")
-	coloredLogoLines := make([]string, len(logoLines))
+	// Add tagline below the logo with glowing effect
+	tagline := lipgloss.NewStyle().
+		Foreground(terminalBrightCyan).
+		Italic(true).
+		Bold(true).
+		Render("A powerful Terminal UI for managing Node.js projects with style")
 
-	for i, line := range logoLines {
-		// Create a gradient effect
-		style := lipgloss.NewStyle().Bold(true)
-		if i < len(logoLines)/2 {
-			style = style.Foreground(terminalBrightBlue)
-		} else {
-			style = style.Foreground(terminalBrightCyan)
-		}
-		coloredLogoLines[i] = style.Render(line)
-	}
+	// Build the loading animation
+	loadingAnimation := loadingFrames[m.frame]
 
-	coloredLogo := strings.Join(coloredLogoLines, "\n")
-
-	// Get progress indicator with dynamic color
-	spinnerChar := loadingFrames[m.frame]
-
-	// Determine text based on progress
+	// Calculate progress through the splash screen
 	progress := float64(time.Since(m.startTime)) / float64(m.displayTime)
-
-	// Generate the loading bar
-	loadingWidth := 20
-	filledWidth := int(progress * float64(loadingWidth))
-	emptyWidth := loadingWidth - filledWidth
-
-	loadingBar := "["
-	loadingBar += strings.Repeat("=", filledWidth)
-	if emptyWidth > 0 {
-		loadingBar += ">"
-		loadingBar += strings.Repeat(" ", emptyWidth-1)
-	}
-	loadingBar += "]"
-
-	// Format the loading status
-	var statusText string
-	if m.currentStep == len(m.loadingSteps)-1 {
-		statusText = lipgloss.NewStyle().
-			Foreground(terminalBrightGreen).
-			Bold(true).
-			Render(m.completedText)
-	} else {
-		statusText = lipgloss.NewStyle().
-			Foreground(terminalBrightYellow).
-			Bold(true).
-			Render(fmt.Sprintf("%s %s %s", m.loadingText, spinnerChar, loadingBar))
+	if progress > 1.0 {
+		progress = 1.0
 	}
 
-	// Create version info display
+	// Create a progress bar
+	progressBarWidth := 40
+	completedWidth := int(float64(progressBarWidth) * progress)
+	remainingWidth := progressBarWidth - completedWidth
+
+	progressBar := lipgloss.NewStyle().Foreground(terminalBrightGreen).Render(strings.Repeat("█", completedWidth))
+	progressBar += lipgloss.NewStyle().Foreground(terminalBrightBlack).Render(strings.Repeat("█", remainingWidth))
+
+	// Create fancy progress indicator with current step
+	stepIndicator := ""
+	for i := 0; i < len(m.loadingSteps); i++ {
+		if i < m.currentStep {
+			// Completed step
+			stepIndicator += lipgloss.NewStyle().
+				Foreground(terminalBrightGreen).
+				Render("● ")
+		} else if i == m.currentStep {
+			// Current step
+			stepIndicator += lipgloss.NewStyle().
+				Foreground(terminalBrightYellow).
+				Render(loadingAnimation + " ")
+		} else {
+			// Future step
+			stepIndicator += lipgloss.NewStyle().
+				Foreground(terminalBrightBlack).
+				Render("○ ")
+		}
+	}
+
+	// Create loading message with terminal style
+	loadingMsg := lipgloss.NewStyle().
+		Foreground(terminalBrightWhite).
+		Bold(true).
+		Render(m.loadingText)
+
+	// Combine all elements with proper spacing and centering
+	logoStr := strings.Join(logoLines, "\n")
+
+	// Version info with monospace styling
 	versionInfo := lipgloss.NewStyle().
-		Foreground(terminalWhite).
-		Render("TUI for Node.js, npm, and npx")
+		Foreground(terminalBrightBlack).
+		Render("v1.0.0")
 
-	// Add a border around the content
-	mainContent := lipgloss.JoinVertical(
-		lipgloss.Center,
-		coloredLogo,
-		"",
-		statusText,
-		"",
-		versionInfo,
-	)
-
-	borderedContent := lipgloss.NewStyle().
-		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(terminalBrightBlue).
-		Padding(1, 2).
-		Render(mainContent)
-
-	// Center the content
-	centered := lipgloss.Place(
-		m.width,
-		m.height,
-		lipgloss.Center,
-		lipgloss.Center,
-		borderedContent,
-	)
-
-	// If we have particles, overlay them
-	if background != "" {
-		// This is a simple way to overlay, but in a real implementation
-		// you would need more sophisticated handling to properly blend
-		// the particles with the centered content
-		return centered
+	// Center everything based on the terminal width
+	logoWidth := len(asciiLines[0])
+	leftPadding := (m.width - logoWidth) / 2
+	if leftPadding < 0 {
+		leftPadding = 0
 	}
 
-	return centered
+	// Apply padding to center the content
+	paddedLogo := lipgloss.NewStyle().PaddingLeft(leftPadding).Render(logoStr)
+	paddedTagline := lipgloss.NewStyle().PaddingLeft(leftPadding).Render(tagline)
+	paddedProgressBar := lipgloss.NewStyle().PaddingLeft(leftPadding).Render(progressBar)
+	paddedStepIndicator := lipgloss.NewStyle().PaddingLeft(leftPadding).Render(stepIndicator)
+	paddedLoadingMsg := lipgloss.NewStyle().PaddingLeft(leftPadding).Render(loadingMsg)
+	paddedVersionInfo := lipgloss.NewStyle().PaddingLeft(leftPadding).Render(versionInfo)
+
+	// Combine all components
+	result := "\n\n" + paddedLogo + "\n"
+	result += paddedTagline + "\n\n"
+	result += paddedProgressBar + "\n"
+	result += paddedStepIndicator + "\n"
+	result += paddedLoadingMsg + "\n\n"
+	result += paddedVersionInfo
+
+	// Add skip message if we've shown enough
+	if time.Since(m.startTime) > (m.displayTime / 2) {
+		skipMsg := lipgloss.NewStyle().
+			Foreground(terminalBrightWhite).
+			Italic(true).
+			Render("Press any key to skip...")
+
+		result += "\n\n" + lipgloss.NewStyle().PaddingLeft(leftPadding).Render(skipMsg)
+	}
+
+	return result
 }
 
 // IsDone indicates if the splash screen has completed

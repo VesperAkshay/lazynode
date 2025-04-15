@@ -34,29 +34,61 @@ func (p *HelpPanel) SetSize(width, height int) {
 
 // View returns the view for the help panel
 func (p *HelpPanel) View() string {
-	helpContent := `LazyNode Help:
+	helpContent := `LazyNode Help
 
-Navigation:
-  q           : Quit
-  ?           : Toggle help
-  tab         : Switch panels
-  ↑/↓         : Navigate within panel
-  alt+↑/↓     : Switch between panels
-  enter       : Select/run script
+━━━ Navigation ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ↑/k, ↓/j       : Navigate up/down
+  ←/h, →/l       : Navigate left/right
+  alt+↑/↓/←/→    : Navigate between panels
+  tab, shift+tab : Cycle through panels
+  1-5            : Switch to panel by number
   
-Scripts:
-  r           : Refresh scripts
+━━━ Package Management ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  i              : Install package
+  I              : Install as dev dependency
+  d              : Uninstall package
+  u              : Update package
+  o              : Check for outdated packages
+  l              : Link package
+  L              : Unlink package
+  g              : Link package globally
+  G              : Unlink package globally
+  b              : Build package/project
+  t              : Run tests
+  p              : Publish package
+  e              : Edit package.json
+  /              : Search packages
   
-Packages:
-  a           : Show all actions
-  i           : Install package
-  d           : Uninstall package
-  u           : Update package
-  o           : Check for outdated
-`
+━━━ Script Management ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  enter          : Run selected script
+  ctrl+c         : Stop running script
+  r              : Reload scripts list
+  
+━━━ NPX Commands ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  n              : New npx command
+  enter          : Run selected npx command
+  
+━━━ Project Actions ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  r              : Reload project info
+  
+━━━ Panel Layout ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Left           : Scripts (top) & Project (bottom)
+  Middle         : Packages
+  Right          : NPX
+  Bottom         : Logs
+  
+━━━ UI Controls ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ?              : Toggle help
+  q, ctrl+c      : Quit
+  space          : Toggle details
+  F              : Toggle fullscreen
+  esc            : Cancel/back
 
-	// Render without borders or padding
+Press any key to close this help screen.`
+
+	// Apply terminal styling
 	return lipgloss.NewStyle().
+		Foreground(terminalBrightWhite).
 		Width(p.width).
 		Height(p.height).
 		Render(helpContent)
