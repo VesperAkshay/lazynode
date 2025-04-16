@@ -354,11 +354,15 @@ func NewModel() Model {
 	splashScreen := NewSplashModel()
 	quitScreen := NewQuitModel()
 
+	// Initialize logs panel early to avoid nil references
+	logs := NewLogsPanel()
+
 	return Model{
 		keys:         keys,
 		help:         help.New(),
 		activeTab:    "scripts",
 		panels:       make(map[string]Panel),
+		logs:         logs,
 		helpPanel:    helpPanel,
 		showHelp:     false,
 		ready:        false,
@@ -366,7 +370,10 @@ func NewModel() Model {
 		splashScreen: splashScreen,
 		showQuit:     false,
 		quitScreen:   quitScreen,
-		msgChan:      make(chan tea.Msg, 10), // Buffer for background messages
+		msgChan:      make(chan tea.Msg, 100), // Larger buffer for background messages
+		error:        "",
+		width:        80, // Default initial width
+		height:       24, // Default initial height
 	}
 }
 
@@ -383,7 +390,14 @@ func (m Model) Init() tea.Cmd {
 
 // listenForBackgroundMsgs listens for messages from background goroutines
 func (m Model) listenForBackgroundMsgs() tea.Msg {
-	return <-m.msgChan
+	select {
+	case msg := <-m.msgChan:
+		return msg
+	case <-time.After(100 * time.Millisecond):
+		// If no message received after timeout, return a no-op message
+		// and let the system continue processing
+		return tea.Cmd(m.listenForBackgroundMsgs)
+	}
 }
 
 // Load packages in the background to avoid blocking the UI
@@ -744,9 +758,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.scriptRunner = msg.scriptRunner
 		m.npxRunner = msg.npxRunner
 
-		// Create logs panel first
-		m.logs = NewLogsPanel()
-
 		// Create scripts panel (fast operation)
 		scriptsPanel := NewScriptsPanel(m.scriptRunner)
 		scriptsPanel.SetLogsPanel(m.logs)
@@ -771,8 +782,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Initialize panel sizes
 		m.updatePanelSizes()
 
-		// Load packages asynchronously
-		return m, m.loadPackagesAsync()
+		// Load packages asynchronously and restart background message listener
+		return m, tea.Batch(m.loadPackagesAsync(), m.listenForBackgroundMsgs)
 
 	case packageLoadedMsg:
 		// Update the UI with the loaded package panel
@@ -784,7 +795,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Make sure panel sizes are updated
 		m.updatePanelSizes()
 
-		return m, nil
+		// Restart background message listener
+		return m, m.listenForBackgroundMsgs
 
 	case tickMsg:
 		// Real-time updates
